@@ -50,114 +50,74 @@ namespace objetosc_stozka
 {
     class Program
     {
-        // Stała epsilon do porównań zmiennoprzecinkowych
-        private const double EPSILON = 1e-10;
-
         static void Main(string[] args)
         {
             try
             {
-                // Rozszerzona obsługa wejścia z dodatkową walidacją
-                string[] input = Console.ReadLine().Split(" ");
-                
-                // Sprawdzenie poprawności liczby argumentów
-                if (input.Length != 2)
+                checked
                 {
-                    throw new ArgumentException("ujemny argument");
+                    // Wczytanie danych wejściowych
+                    string[] input = Console.ReadLine().Split(" ");
+
+                    if (input.Length != 2)
+                    {
+                        throw new Exception();
+                    }
+
+                    // Parsowanie danych wejściowych
+                    if (!long.TryParse(input[0], out long R) || !long.TryParse(input[1], out long L))
+                    {
+                        throw new Exception();
+                    }
+
+                    // Sprawdzenie warunku na argumenty ujemne
+                    if (R < 0 || L < 0)
+                    {
+                        Console.WriteLine("ujemny argument");
+                        return;
+                    }
+
+                    // Sprawdzenie, czy możliwe jest skonstruowanie stożka
+                    if (L < R)
+                    {
+                        Console.WriteLine("obiekt nie istnieje");
+                        return;
+                    }
+
+                    // Obliczanie objętości stożka
+                    decimal volume = CalculateConeVolume(R, L);
+
+                    // Szacowanie dolnej i górnej granicy objętości
+                    long lowerBound = (long)Math.Floor(volume);
+                    long upperBound = (long)Math.Ceiling(volume);
+
+                    // Wypisanie wyniku
+                    Console.WriteLine($"{lowerBound} {upperBound}");
                 }
-
-                decimal R = decimal.Parse(input[0]);
-                decimal L = decimal.Parse(input[1]);
-
-                // Rozszerzone walidacje
-                ValidateInput(R, L);
-
-                decimal V;
-                decimal volume = (decimal)ObliczObjetoscStozka(R, L, out V);
-
-                // Zaawansowane szacowanie wartości
-                int[] szacowaneWartosci = SzacowanieStozka(volume);
-
-                Console.WriteLine($"{szacowaneWartosci[0]} {szacowaneWartosci[1]}");
             }
-            catch (ArgumentException e)
-            {
-                Console.WriteLine(e.Message);
-            }
-            catch (FormatException)
+            catch
             {
                 Console.WriteLine("ujemny argument");
             }
-            catch (OverflowException)
-            {
-                Console.WriteLine("obiekt nie istnieje");
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e.Message);
-            }
         }
 
-        // Walidacja danych wejściowych
-        static void ValidateInput(decimal R, decimal L)
+        /// <summary>
+        /// Funkcja obliczająca objętość stożka.
+        /// </summary>
+        static decimal CalculateConeVolume(long R, long L)
         {
-            // Sprawdzenie wartości ujemnych
-            if (R < 0 || L < 0)
+            checked
             {
-                throw new ArgumentException("ujemny argument");
+                // Rzutowanie wartości na decimal
+                decimal decimalR = (decimal)R;
+                decimal decimalL = (decimal)L;
+
+                // Obliczanie wysokości stożka
+                decimal height = (decimal)Math.Sqrt((double)(decimalL * decimalL - decimalR * decimalR));
+
+                // Obliczanie objętości stożka
+                return (1.0m / 3.0m) * (decimal)Math.PI * decimalR * decimalR * height;
             }
-
-            // Sprawdzenie warunku istnienia stożka
-            if (L < R)
-            {
-                throw new ArgumentException("obiekt nie istnieje");
-            }
-
-            // Zabezpieczenie przed bardzo małymi wartościami
-            if (R < (decimal)EPSILON || L < (decimal)EPSILON)
-            {
-                throw new ArgumentException("obiekt nie istnieje");
-            }
-        }
-
-        // Ulepszona metoda obliczania objętości stożka
-        static double ObliczObjetoscStozka(decimal R, decimal L, out decimal V)
-        {
-            // Obliczenie wysokości z zabezpieczeniami
-            decimal H = (decimal)Math.Sqrt((double)(L * L - R * R));
-
-            // Zabezpieczenie przed błędami numerycznymi
-            if (H<0 || (H == 0))
-            {
-                throw new ArithmeticException("ujemny argument");
-            }
-
-            // Dokładne obliczenie objętości z użyciem decimal
-            V = (1.0m / 3.0m) * (decimal)Math.PI * R * R * H;
-
-            return (double)V;
-        }
-
-        // Ulepszone szacowanie wartości
-        static int[] SzacowanieStozka(decimal V)
-        {
-            // Dodatkowe sprawdzenia
-            if (V < (decimal)EPSILON)
-            {
-                return new int[] { 0, 0 };
-            }
-
-            // Dokładniejsze zaokrąglanie z małą tolerancją
-            int lowerLimit = (int)Math.Floor((double)V + EPSILON);
-            int upperLimit = (int)Math.Ceiling((double)V - EPSILON);
-
-            // Dodatkowe zabezpieczenie przed przepełnieniem
-            if (lowerLimit < 0 || upperLimit < 0)
-            {
-                throw new OverflowException("ujemny argument");
-            }
-
-            return new int[] { lowerLimit, upperLimit };
         }
     }
 }
