@@ -1,6 +1,6 @@
 ﻿using System;
-using System.IO;
-
+// using System.IO;
+using System.Collections.Generic;
 namespace zadanie_tablice_sudoku
 {
     // Napisz program, który sprawdzi czy podana tabela 9x9 jednocyfrowych liczb całkowitych jest prawidłowym rozwiązaniem łamigłówki Sudoku.
@@ -47,9 +47,9 @@ namespace zadanie_tablice_sudoku
                     sudoku[i, j] = int.Parse(input[j]);
                 }
             }
-            var isRowsCorrect = checkRows(sudoku);
-            var isColumnsCorrect = checkColumns(sudoku);
-            var isSquareCorrect = checkSquares(sudoku);
+            bool isRowsCorrect = CheckRows(sudoku);
+            bool isColumnsCorrect = CheckColumns(sudoku);
+            bool isSquareCorrect = CheckSquares(sudoku);
             if (isRowsCorrect && isColumnsCorrect && isSquareCorrect)
             {
                 Console.WriteLine("yes");
@@ -57,7 +57,7 @@ namespace zadanie_tablice_sudoku
             }
             Console.WriteLine("no");
         }
-        public static bool checkRows(int[,] sudoku)
+        public static bool CheckRows(int[,] sudoku)
         {
             HashSet<int> uniqueNumbers = new HashSet<int>();
             for (int i = 0; i < sudoku.GetLength(0); i++)
@@ -74,7 +74,7 @@ namespace zadanie_tablice_sudoku
             }
             return true;
         }
-        public static bool checkColumns(int[,] sudoku)
+        public static bool CheckColumns(int[,] sudoku)
         {
             HashSet<int> uniqueNumbers = new HashSet<int>();
             for (int i = 0; i < sudoku.GetLength(0); i++)
@@ -92,7 +92,7 @@ namespace zadanie_tablice_sudoku
             return true;
         }
 
-        public static bool checkSquares(int[,] sudoku)
+        public static bool CheckSquares(int[,] sudoku)
         {
             HashSet<int> uniqueNumbers = new HashSet<int>();
 
