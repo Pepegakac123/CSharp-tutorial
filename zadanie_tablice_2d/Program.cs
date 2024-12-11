@@ -2,7 +2,7 @@
 
 namespace zadanie_tablice_2d
 {
-    cd  class Program{
+    public static class Program{
     // Zadanie 1:
     // Napisz program, który wczyta ze standardowego wejścia tablicę liczb całkowitych i wypisze na standardowe wyjście jej transpozycję (zamiana wierszy na kolumny).
     // Na wejściu, w pierwszej linii podane będą dwie dodatnie liczby n oraz m oddzielone pojedynczą spacją, oznaczające odpowiednio liczbę wierszy oraz liczbę kolumn wczytywanej tablicy. Liczby n oraz m nie przekroczą wartości 10.
