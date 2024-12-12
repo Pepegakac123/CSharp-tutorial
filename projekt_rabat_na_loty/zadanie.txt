@@ -1,0 +1,44 @@
+Problem
+Poniżej przedstawiono zasady udzielania rabatów na przeloty w pewnej linii lotniczej.
+
+Dla pasażerów niemowląt w wieku poniżej 2 lat na rejsach krajowych przysługuje rabat w wysokości 80%. Na trasach międzynarodowych rabat ten wynosi 70%. Dla młodzieży (od 2 do 16 lat) przysługuje rabat w wysokości 10%, zarówno na trasach krajowych jak i międzynarodowych. Pasażerom, którzy rezerwują lot na 5 miesięcy przed podróżą, przysługuje rabat w wysokości 10%. Dla lotów międzynarodowych pasażerom przysługuje 15% rabat, jeśli podróżują poza sezonem. Nie ma zniżek na loty międzynarodowe chyba, że pasażer jest niemowlęciem lub podróż odbywa się poza sezonem. Stali klienci (a mogą nimi być tylko pasażerowie, którzy ukończyli 18 lat) otrzymują zniżkę 15%. Rabaty łączą się. Maksymalny łączny rabat dla niemowląt nie może przekroczyć 80%, zaś dla pozostałych – 30%.
+
+Przyjmij, że sezon, to okres wakacyjny i świąteczny tzn. 20.12.XXXX – 10.01.XXX(X+1), 20.03.XXXX – 10.04.XXXX oraz miesiące lipiec i sierpień, gdzie XXXX oznacza dowolny rok.
+
+Zadanie 1
+Napisz program konsolowy prowadzący dialog z użytkownikiem (zadający pytania dotyczące warunków zakupu biletu i wczytujący odpowiedzi użytkownika, np. data urodzenia, data lotu, czy lot jest krajowy/międzynarodowy, czy stały klient, ...), wypisujący obliczony rabat przysługujący klientowi w dniu bieżącym (w chwili uruchomienia programu).
+
+Scenariusz działania programu
+Program zadaje klientowi serię pytań, wczytuje dane. W przypadku niepoprawnych danych informuje o rodzaju błędu i prosi o ponowne ich wprowadzenie.
+Program wypisuje wczytane dane i przystępuje do obliczeń
+Program wypisuje wynik - obliczony rabat
+Przykładowa sesja:
+
+Podaj swoją datę urodzenia w formacie RRRR-MM-DD: 2011-01-01
+Podaj datę lotu w formacie RRRR-MM-DD: 2023-07-04
+Czy lot jest krajowy (T/N)? t
+Czy jesteś stałym klientem (T/N)? t
+
+=== Do obliczeń przyjęto:
+ * Data urodzenia: 01.01.2011
+ * Data lotu: wtorek, 4 lipca 2023. Lot w sezonie
+ * Lot krajowy
+ * Stały klient: Tak
+
+Przysługuje Ci rabat w wysokości: 10%
+Data wygenerowania raportu: 2023-02-01 12:03:23
+Zalecenia
+Postaraj się odwzorować podany powyżej scenariusz i wydruk raportu.
+Postaraj się zminimalizować liczbę instrukcji if-else.
+Wykorzystaj typy danych DateTime, DateOnly do operacji na datach.
+Dodatkowe źródła:
+
+https://docs.microsoft.com/en-us/dotnet/api/system.datetime
+https://learn.microsoft.com/en-us/dotnet/api/system.dateonly
+https://learn.microsoft.com/en-us/dotnet/standard/datetime/how-to-use-dateonly-timeonly
+https://www.tutorialsteacher.com/csharp/csharp-datetime
+https://www.c-sharpcorner.com/article/datetime-in-c-sharp/
+Ograniczenia
+Program nie może zgłosić żadnego wyjątku, wymusza na operatorze wprowadzenie poprawnych danych
+Jedynym sposobem zakończenia programu jest wprowadzenie poprawnie wszystkich danych i uzyskanie wyniku obliczeń (ewentualnie przerwanie z poziomu systemu operacyjnego Ctrl-Z)
+Projekt aplikacji z wykorzystaniem środowiska .Net 8. Sugerowana praca w VS Code.
