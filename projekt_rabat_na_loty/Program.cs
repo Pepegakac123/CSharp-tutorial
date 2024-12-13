@@ -7,6 +7,85 @@ namespace RabatyLiniLotniczej
     {
         public static void Main(string[] args)
         {
+            Console.WriteLine("Witamy w systemie rabatów lini lotniczych!");
+            Console.WriteLine("------------------------------------------\n");
+            var (dateOfBirth, dateOfFlight, isDomesticFlight, isRegularCustomer) = GetUserInput();
+            PrintTicketInfo(dateOfBirth, dateOfFlight, isDomesticFlight, isRegularCustomer);
+        }
+        private static int CalculateDiscount(dateOfBirth, dateOfFlight, isDomesticFlight, isRegularCustomer)
+        {
+
+            double discount = 0;
+            const double maxBabyDiscount = 0.8;
+            const double maxRegularDiscount = 0.3;
+            bool isFlightInSeason = CheckIsFlightInSeason(dateOfFlight);
+            bool isEarlyReservation = CheckEarlyReservation(dateOfFlight);
+            // Rabaty wiekowe
+            if (dateOfBirth.Year - DateTime.Now.Year < 2)
+            {
+                isDomesticFlight? discount += 0.8 : discount += 0.7;
+                isEarlyReservation? discount += 0.1 : discount += 0;
+                if (discount > maxBabyDiscount) return maxBabyDiscount;
+
+                return discount;
+            }
+            else if (isFlightInSeason)
+            {
+
+            }
+            /*
+        SYSTEM RABATÓW LINII LOTNICZEJ
+
+        1. RABATY WIEKOWE:
+        - Niemowlęta (< 2 lat):
+            * 80% - loty krajowe
+            * 70% - loty międzynarodowe
+        - Młodzież (2-16 lat):
+            * 10% - wszystkie loty
+
+        2. RABATY DODATKOWE:
+        - Wczesna rezerwacja (5 miesięcy przed): 10%
+        - Poza sezonem (tylko loty międzynarodowe): 15%
+        - Stały klient (tylko 18+ lat): 15%
+
+        3. OGRANICZENIA:
+        - Loty międzynarodowe: rabaty tylko dla niemowląt lub lotów poza sezonem
+        - Max łączny rabat:
+            * 80% - niemowlęta
+            * 30% - pozostali pasażerowie
+
+        4. SEZONY (okresy bez zniżek):
+        - 20.12 - 10.01
+        - 20.03 - 10.04
+        - 01.07 - 31.08
+        */
+        }
+        private static bool CheckIsFlightInSeason(DateOnly dateOfFlight)
+        {
+            // Okres świąteczno-noworoczny (20.12 - 10.01)
+            if ((dataLotu.Month == 12 && dataLotu.Day >= 20) ||
+                (dataLotu.Month == 1 && dataLotu.Day <= 10))
+                return true;
+
+            // Okres wiosenny (20.03 - 10.04)
+            if ((dataLotu.Month == 3 && dataLotu.Day >= 20) ||
+                (dataLotu.Month == 4 && dataLotu.Day <= 10))
+                return true;
+
+            // Okres wakacyjny (lipiec i sierpień)
+            if (dataLotu.Month == 7 || dataLotu.Month == 8)
+                return true;
+
+            return false;
+        }
+        private static bool CheckEarlyReservation(DateOnly dateOfFlight)
+        {
+            // Obliczamy różnicę w miesiącach
+            int MonthDiff = ((dateOfFlight.Year - DateOnly.Now.Year) * 12) + (dateOfFlight.Month - DateOnly.Now.Month);
+            return MonthDiff >= 5;
+        }
+        private static (DateOnly dateOfBirth, DateOnly dateOfFlight, bool isDomesticFlight, bool isRegularCustomer) GetUserInput()
+        {
             DateOnly? dateOfBirth = null;
             DateOnly? dateOfFlight = null;
             bool success = false;
@@ -18,70 +97,80 @@ namespace RabatyLiniLotniczej
                 try
                 {
                     Console.WriteLine("Podaj swoją date urodzenia w formacie RRRR.MM.DD: ");
-                    string[] dateOfBirthInfo = Console.ReadLine().Split(".");
-                    // Sprawdzenie czy format daty urodzenia jest poprawny
-                    if (dateOfBirthInfo.Length != 3)
-                        throw new FormatException("Podana data urodzenia jest niepoprawna. Podaj datę w formacie RRRR.MM.DD np: 2004.12.22");
-
-                    // Sprawdzenie czy podane dane są poprawne i da się przekonwertować je na liczby
-                    if (!int.TryParse(dateOfBirthInfo[0], out int yearBirth) ||
-                        !int.TryParse(dateOfBirthInfo[1], out int monthBirth) ||
-                        !int.TryParse(dateOfBirthInfo[2], out int dayBirth))
-                        throw new FormatException("Data urodzenia zawiera nieprawidłowe liczby");
-
-                    dateOfBirth = new DateOnly(yearBirth, monthBirth, dayBirth);
+                    dateOfBirth = ValidateAndParseData(Console.ReadLine().Split("."), "urodzenia");
 
                     Console.WriteLine("Podaj date lotu w formacie RRRR.MM.DD: ");
-                    string[] dateOfFlightInfo = Console.ReadLine().Split(".");
-                    // Sprawdzenie czy format daty lotu jest poprawny
-                    if (dateOfFlightInfo.Length != 3)
-                        throw new FormatException("Podana data lotu jest niepoprawna. Podaj datę w formacie RRRR.MM.DD np: 2024.12.22");
-
-                    // Sprawdzenie czy podane dane są poprawne i da się przekonwertować je na liczby
-                    if (!int.TryParse(dateOfFlightInfo[0], out int yearFlight) ||
-                        !int.TryParse(dateOfFlightInfo[1], out int monthFlight) ||
-                        !int.TryParse(dateOfFlightInfo[2], out int dayFlight))
-                        throw new FormatException("Data lotu zawiera nieprawidłowe liczby");
-
-                    dateOfFlight = new DateOnly(yearFlight, monthFlight, dayFlight);
-
-                    // Sprawdzamy czy data lotu nie jest wcześniejsza niż dzisiejsza
-                    if (dateOfFlight < DateOnly.FromDateTime(DateTime.Now))
-                        throw new ArgumentException("Data lotu nie może być wcześniejsza niż dzisiejsza");
-
-                    // Sprawdzamy czy data urodzenia nie jest późniejsza niż dzisiejsza
-                    if (dateOfBirth > DateOnly.FromDateTime(DateTime.Now))
-                        throw new ArgumentException("Data urodzenia nie może być późniejsza niż dzisiejsza");
+                    dateOfFlight = ValidateAndParseData(Console.ReadLine().Split("."), "lotu", true);
 
                     Console.WriteLine("Czy lot jest krajowy (T/N)? ");
-                    string domesticInput = Console.ReadLine().Trim().ToUpper();
-                    if (domesticInput != "T" && domesticInput != "N")
-                        throw new ArgumentException("Odpowiedź musi być T lub N");
-                    isDomesticFlight = domesticInput == "T";
+                    isDomesticFlight = ValidateAndParseYesNo(Console.ReadLine(), "czy lot krajowy?");
 
                     Console.WriteLine("Czy jesteś stałym klientem (T/N)? ");
-                    string regularInput = Console.ReadLine().Trim().ToUpper();
-                    if (regularInput != "T" && regularInput != "N")
-                        throw new ArgumentException("Odpowiedź musi być T lub N");
-                    isRegularCustomer = regularInput == "T";
+                    isRegularCustomer = ValidateAndParseYesNo(Console.ReadLine(), "czy stały klient?");
+                    if (isRegularCustomer)
+                        validateIsRegularCustomerCorrect(dateOfBirth);
 
                     success = true;
                 }
                 catch (FormatException ex)
                 {
-                    Console.WriteLine($"Błąd formatu: {ex.Message}");
+                    Console.WriteLine($"Błąd formatu: {ex.Message}");
+                }
+                catch (ArgumentOutOfRangeException) // Jeżeli data jest niezgodna z realnym formatem
+                {
+                    Console.WriteLine("Błąd: Podana data zawiera nieprawidłowe wartości (miesiąc 1-12, dzień 1-31)");
                 }
                 catch (ArgumentException ex)
                 {
-                    Console.WriteLine($"Błąd danych: {ex.Message}");
+                    Console.WriteLine($"Błąd danych: {ex.Message}");
                 }
                 catch (Exception)
                 {
-                    Console.WriteLine("Wystąpił nieoczekiwany błąd. Spróbuj ponownie.");
+                    Console.WriteLine("Wystąpił nieoczekiwany błąd. Spróbuj ponownie.");
                 }
             }
+            return (dateOfBirth.Value, dateOfFlight.Value, isDomesticFlight, isRegularCustomer);
+        }
+        private static DateOnly ValidateAndParseData(string[] dateInfo, string dateType, bool isFlightDate = false)
+        {
+            // Sprawdzenie czy format daty jest poprawny
+            if (dateInfo.Length != 3)
+                throw new FormatException($"Podana data {dateType} jest niepoprawna. Podaj datę w formacie RRRR.MM.DD");
 
-            PrintTicketInfo(dateOfBirth.Value, dateOfFlight.Value, isDomesticFlight, isRegularCustomer);
+            // Sprawdzenie czy podane dane są poprawne i da się przekonwertować je na liczby
+            if (!int.TryParse(dateInfo[0], out int year) ||
+                !int.TryParse(dateInfo[1], out int month) ||
+                !int.TryParse(dateInfo[2], out int day))
+                throw new FormatException("Data urodzenia zawiera nieprawidłowe liczby");
+
+            DateOnly date = new DateOnly(year, month, day);
+
+            // Jeżeli jest to data lotu, sprawdzamy czy jest wcześniej niż dzisiejsza
+            if (isFlightDate && date < DateOnly.FromDateTime(DateTime.Now))
+            {
+                throw new ArgumentException("Data lotu nie może być wcześniejsza niż dzisiejsza");
+            }
+            // Jeżeli jest to data urodzenia, sprawdzamy czy ktoś nie urodził się w przyszłości
+            else if (!isFlightDate && (date > DateOnly.FromDateTime(DateTime.Now)) || date.Year < 1945)
+            {
+                throw new ArgumentException("Data urodzenia nie może być wcześniejsza niż dzisiejsza");
+            }
+            return date;
+        }
+
+        private static bool ValidateAndParseYesNo(string input, string questionType)
+        {
+            string trimmedInput = input.Trim().ToUpper();
+            if (trimmedInput != "T" && trimmedInput != "N")
+                throw new ArgumentException($"Odpowiedź dla '{questionType}' musi być T lub N");
+
+            return trimmedInput == "T" ? true : false;
+        }
+
+        private static void validateIsRegularCustomerCorrect(DateOnly dateOfBirth)
+        {
+            int YearsDiff = OnlyDate.Now.Year - dateOfBirth.Year;
+            if (YearsDiff < 18) throw new ArgumentException($"Aby być stałym klientem musisz mieć ukończone 18 lat"); ;
         }
 
         private static void PrintTicketInfo(DateOnly dateOfBirth, DateOnly dateOfFlight, bool isDomesticFlight, bool isRegularCustomer)
