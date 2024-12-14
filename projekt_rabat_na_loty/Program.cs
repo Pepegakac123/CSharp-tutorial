@@ -13,17 +13,17 @@ namespace RabatyLiniLotniczej
             PrintTicketInfo(dateOfBirth, dateOfFlight, isDomesticFlight, isRegularCustomer);
             Console.WriteLine("------------------------------------------");
             PrintDiscountInfo(CalculateDiscount(dateOfBirth, dateOfFlight, isDomesticFlight, isRegularCustomer));
-            // CalculateDiscount(dateOfBirth, dateOfFlight, isDomesticFlight, isRegularCustomer);
+            CalculateDiscount(dateOfBirth, dateOfFlight, isDomesticFlight, isRegularCustomer);
         }
-        private static void PrintDiscountInfo(int discount)
-        {
-            DateOnly today = DateOnly.FromDateTime(DateTime.Now);
-            Console.WriteLine($"Przysługuje Ci rabat w wysokości: {discount}%");
-            Console.WriteLine($"Data wygenerowania raportu: {today}");
 
-            // Przysługuje Ci rabat w wysokości: 10%
-            // Data wygenerowania raportu: 2023-02-01 12:03:23
-        }
+        /// <summary>
+        /// Oblicza końcowy rabat na podstawie danych pasażera i lotu.
+        /// </summary>
+        /// <param name="dateOfBirth">Data urodzenia pasażera</param>
+        /// <param name="dateOfFlight">Data lotu</param>
+        /// <param name="isDomesticFlight">Czy lot jest krajowy</param>
+        /// <param name="isRegularCustomer">Czy pasażer jest stałym klientem</param>
+        /// <returns>Wartość rabatu w procentach (0-30 dla regularnych, 0-80 dla niemowląt)</returns>
         private static int CalculateDiscount(DateOnly dateOfBirth, DateOnly dateOfFlight, bool isDomesticFlight, bool isRegularCustomer)
         {
             double discount = 0;
@@ -33,9 +33,9 @@ namespace RabatyLiniLotniczej
             bool isEarlyReservation = CheckEarlyReservation(dateOfFlight);
             DateOnly today = DateOnly.FromDateTime(DateTime.Now);
 
-            // Sprawdzenie czy pasażer jest niemowlęciem
+            // czy pasażer jest niemowlęciem
             bool isInfant = dateOfBirth > today.AddYears(-2);
-            // Sprawdzenie czy pasażer jest młodzieżą (2-16 lat)
+            // czy pasażer jest młodzieżą (2-16 lat)
             bool isYouth = dateOfBirth <= today.AddYears(-2) && dateOfBirth > today.AddYears(-16);
 
             // Przypadek 1: Niemowlęta
@@ -67,7 +67,7 @@ namespace RabatyLiniLotniczej
                 // Jeśli lot w sezonie - brak rabatów
             }
 
-            //Zwracanie wartości rabatu w procentach, jeżeli jest ona mniejsza od maksymalnego rabatu, w innym przypadku zwraca sie maksymalny raba
+            //Zwracanie wartości rabatu w procentach, jeżeli jest ona mniejsza od maksymalnego rabatu, w innym przypadku zwraca sie maksymalny rabat dla danej grupy
             return (int)(Math.Min(discount, maxRegularDiscount) * 100);
         }
 
@@ -98,6 +98,11 @@ namespace RabatyLiniLotniczej
     - 01.07 - 31.08
     */
 
+        /// <summary>
+        /// Sprawdza czy data lotu wypada w sezonie (okres świąteczny, wiosenny lub wakacyjny).
+        /// </summary>
+        /// <param name="dateOfFlight">Data lotu do sprawdzenia</param>
+        /// <returns>true jeśli lot jest w sezonie, false w przeciwnym razie</returns>
         private static bool CheckIsFlightInSeason(DateOnly dateOfFlight)
         {
             // Okres świąteczno-noworoczny (20.12 - 10.01)
@@ -116,13 +121,27 @@ namespace RabatyLiniLotniczej
 
             return false;
         }
+
+        /// <summary>
+        /// Sprawdza czy rezerwacja jest dokonana z 5-miesięcznym wyprzedzeniem.
+        /// </summary>
+        /// <param name="dateOfFlight">Data lotu</param>
+        /// <returns>true jeśli rezerwacja jest wczesna, false w przeciwnym razie</returns>
         private static bool CheckEarlyReservation(DateOnly dateOfFlight)
         {
             DateOnly today = DateOnly.FromDateTime(DateTime.Now);
             // Obliczamy różnicę w miesiącach
             int MonthDiff = ((dateOfFlight.Year - today.Year) * 12) + (dateOfFlight.Month - today.Month);
-            return MonthDiff >= 5;
+            return MonthDiff >= 5 ? true : false;
         }
+
+        /// <summary>
+        /// Pobiera i waliduje wszystkie dane wejściowe od użytkownika.
+        /// </summary>
+        /// <returns>Krotka zawierająca zwalidowane dane użytkownika (data urodzenia, data lotu, czy lot krajowy, czy stały klient)</returns>
+        /// <exception cref="FormatException">Rzucany gdy format wprowadzonych danych jest nieprawidłowy</exception>
+        /// <exception cref="ArgumentException">Rzucany gdy wprowadzone dane nie spełniają wymagań biznesowych</exception>
+        /// <exception cref="ArgumentOutOfRangeException">Rzucany gdy data zawiera nieprawidłowe wartości (np. miesiąc > 12)</exception>
         private static (DateOnly dateOfBirth, DateOnly dateOfFlight, bool isDomesticFlight, bool isRegularCustomer) GetUserInput()
         {
             DateOnly? dateOfBirth = null;
@@ -131,6 +150,7 @@ namespace RabatyLiniLotniczej
             bool isDomesticFlight = false;
             bool isRegularCustomer = false;
 
+            // Pobranie danych od użytkownika do skutku.
             while (!success)
             {
                 try
@@ -170,6 +190,27 @@ namespace RabatyLiniLotniczej
             }
             return (dateOfBirth.Value, dateOfFlight.Value, isDomesticFlight, isRegularCustomer);
         }
+
+        /// <summary>
+        /// Waliduje i przetwarza dane daty wprowadzone przez użytkownika.
+        /// </summary>
+        /// <param name="dateInfo">Tablica zawierająca części daty utworzona z inputu użytkownika</param>
+        /// <param name="dateType">Typ daty ("urodzenia", "lotu")</param>
+        /// <param name="isFlightDate">Czy data dotyczy lotu</param>
+        /// <returns>Zwalidowany obiekt DateOnly</returns>
+        /// <exception cref="FormatException">Rzucany gdy tablica jest nieprawidłowej długości lub dane nie są liczbami</exception>
+        /// <exception cref="ArgumentException">Rzucany gdy data jest nieprawidłowa logicznie (np. data lotu w przeszłości lub data urodzenia w przyszłości)</exception>
+        /// <exception cref="ArgumentOutOfRangeException">Rzucany gdy wartości daty są spoza zakresu (np. miesiąc > 12)</exception>
+        /// <remarks>
+        /// Metoda obecnie przyjmuje string jako dateType, ale w przyszłości można to zamienić na enum:
+        /// <code>
+        /// public enum DateType
+        /// {
+        ///     Birthday,
+        ///     Flight
+        /// }
+        /// </code>
+        /// </remarks>
         private static DateOnly ValidateAndParseData(string[] dateInfo, string dateType, bool isFlightDate = false)
         {
             // Sprawdzenie czy format daty jest poprawny
@@ -183,20 +224,38 @@ namespace RabatyLiniLotniczej
                 throw new FormatException("Data urodzenia zawiera nieprawidłowe liczby");
 
             DateOnly date = new DateOnly(year, month, day);
+            DateOnly today = DateOnly.FromDateTime(DateTime.Now);
 
             // Jeżeli jest to data lotu, sprawdzamy czy jest wcześniej niż dzisiejsza
-            if (isFlightDate && date < DateOnly.FromDateTime(DateTime.Now))
+            if (isFlightDate && date < today)
             {
                 throw new ArgumentException("Data lotu nie może być wcześniejsza niż dzisiejsza");
             }
             // Jeżeli jest to data urodzenia, sprawdzamy czy ktoś nie urodził się w przyszłości
-            else if (!isFlightDate && (date > DateOnly.FromDateTime(DateTime.Now)) || date.Year < 1945)
+            else if (!isFlightDate && (date > today || date.Year < 1945))
             {
                 throw new ArgumentException("Data urodzenia nie może być wcześniejsza niż dzisiejsza");
             }
             return date;
         }
 
+        /// <summary>
+        /// Waliduje odpowiedź Tak/Nie od użytkownika.
+        /// </summary>
+        /// <param name="input">Wprowadzona odpowiedź</param>
+        /// <param name="questionType">Typ pytania (czy lot krajowy, czy stały klient)</param>
+        /// <returns>true dla 'T', false dla 'N'</returns>
+        /// <exception cref="ArgumentException">Rzucany gdy odpowiedź nie jest 'T' ani 'N'</exception>
+        /// <remarks>
+        /// Metoda obecnie przyjmuje string jako questionType, ale w przyszłości można to zamienić na enum:
+        /// <code>
+        /// public enum questionType
+        /// {
+        ///     IsDomesticFlight,
+        ///     IsRegularCustomer
+        /// }
+        /// </code>
+        /// </remarks>
         private static bool ValidateAndParseYesNo(string input, string questionType)
         {
             string trimmedInput = input.Trim().ToUpper();
@@ -206,6 +265,11 @@ namespace RabatyLiniLotniczej
             return trimmedInput == "T" ? true : false;
         }
 
+        /// <summary>
+        /// Sprawdza czy użytkownik spełnia wymagania wiekowe dla statusu stałego klienta.
+        /// </summary>
+        /// <param name="dateOfBirth">Data urodzenia użytkownika</param>
+        /// <exception cref="ArgumentException">Rzucany gdy użytkownik nie ma 18 lat</exception>
         private static void ValidateIsRegularCustomerCorrect(DateOnly dateOfBirth)
         {
             DateOnly today = DateOnly.FromDateTime(DateTime.Now);
@@ -215,6 +279,23 @@ namespace RabatyLiniLotniczej
                 throw new ArgumentException("Aby być stałym klientem musisz mieć ukończone 18 lat");
         }
 
+        /// <summary>
+        /// Wyświetla informację o przyznanym rabacie.
+        /// </summary>
+        /// <param name="discount">Wartość rabatu w procentach</param>
+        private static void PrintDiscountInfo(int discount)
+        {
+            DateOnly today = DateOnly.FromDateTime(DateTime.Now);
+            Console.WriteLine($"Przysługuje Ci rabat w wysokości: {discount}%");
+            Console.WriteLine($"Data wygenerowania raportu: {today}");
+
+            // Przysługuje Ci rabat w wysokości: 10%
+            // Data wygenerowania raportu: 2023-02-01 12:03:23
+        }
+
+        /// <summary>
+        /// Wyświetla podsumowanie wprowadzonych danych biletu.
+        /// </summary>
         private static void PrintTicketInfo(DateOnly dateOfBirth, DateOnly dateOfFlight, bool isDomesticFlight, bool isRegularCustomer)
         {
             Console.WriteLine("\n=== Do obliczeń przyjęto ===");
@@ -225,47 +306,16 @@ namespace RabatyLiniLotniczej
             Console.WriteLine("=========================");
         }
 
+        /// <summary>
+        /// Formatuje datę do polskiego formatu tekstowego.
+        /// </summary>
+        /// <param name="date">Data do sformatowania</param>
+        /// <returns>Data w formacie "dddd, d MMMM yyyy" po polsku</returns>
         private static string FormatDate(DateOnly date)
         {
             // Zamienia fornat na np:  wtorek, 4 lipca 2023
             return date.ToString("dddd, d MMMM yyyy", new System.Globalization.CultureInfo("pl-PL"));
         }
     }
-    /*
-SYSTEM RABATÓW LINII LOTNICZEJ
 
-1. RABATY WIEKOWE:
-- Niemowlęta (< 2 lat):
-    * 80% - loty krajowe
-    * 70% - loty międzynarodowe
-- Młodzież (2-16 lat):
-    * 10% - wszystkie loty
-
-2. RABATY DODATKOWE:
-- Wczesna rezerwacja (5 miesięcy przed): 10%
-- Poza sezonem (tylko loty międzynarodowe): 15%
-- Stały klient (tylko 18+ lat): 15%
-
-3. OGRANICZENIA:
-- Loty międzynarodowe: rabaty tylko dla niemowląt lub lotów poza sezonem
-- Max łączny rabat:
-    * 80% - niemowlęta
-    * 30% - pozostali pasażerowie
-
-4. SEZONY (okresy bez zniżek):
-- 20.12 - 10.01
-- 20.03 - 10.04
-- 01.07 - 31.08
-*/
-
-    //     Podaj swoją datę urodzenia w formacie RRRR-MM-DD: 2011-01-01
-    // Podaj datę lotu w formacie RRRR-MM-DD: 2023-07-04
-    // Czy lot jest krajowy (T/N)? t
-    // Czy jesteś stałym klientem (T/N)? t
-
-    // === Do obliczeń przyjęto:
-    //  * Data urodzenia: 01.01.2011
-    //  * Data lotu: wtorek, 4 lipca 2023. Lot w sezonie
-    //  * Lot krajowy
-    //  * Stały klient: Tak
 }
