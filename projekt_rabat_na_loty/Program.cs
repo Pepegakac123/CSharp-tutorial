@@ -8,80 +8,119 @@ namespace RabatyLiniLotniczej
         public static void Main(string[] args)
         {
             Console.WriteLine("Witamy w systemie rabatów lini lotniczych!");
-            Console.WriteLine("------------------------------------------\n");
+            Console.WriteLine("------------------------------------------");
             var (dateOfBirth, dateOfFlight, isDomesticFlight, isRegularCustomer) = GetUserInput();
             PrintTicketInfo(dateOfBirth, dateOfFlight, isDomesticFlight, isRegularCustomer);
+            Console.WriteLine("------------------------------------------");
+            PrintDiscountInfo(CalculateDiscount(dateOfBirth, dateOfFlight, isDomesticFlight, isRegularCustomer));
+            // CalculateDiscount(dateOfBirth, dateOfFlight, isDomesticFlight, isRegularCustomer);
         }
-        private static int CalculateDiscount(dateOfBirth, dateOfFlight, isDomesticFlight, isRegularCustomer)
+        private static void PrintDiscountInfo(int discount)
         {
+            DateOnly today = DateOnly.FromDateTime(DateTime.Now);
+            Console.WriteLine($"Przysługuje Ci rabat w wysokości: {discount}%");
+            Console.WriteLine($"Data wygenerowania raportu: {today}");
 
+            // Przysługuje Ci rabat w wysokości: 10%
+            // Data wygenerowania raportu: 2023-02-01 12:03:23
+        }
+        private static int CalculateDiscount(DateOnly dateOfBirth, DateOnly dateOfFlight, bool isDomesticFlight, bool isRegularCustomer)
+        {
             double discount = 0;
             const double maxBabyDiscount = 0.8;
             const double maxRegularDiscount = 0.3;
             bool isFlightInSeason = CheckIsFlightInSeason(dateOfFlight);
             bool isEarlyReservation = CheckEarlyReservation(dateOfFlight);
-            // Rabaty wiekowe
-            if (dateOfBirth.Year - DateTime.Now.Year < 2)
+            DateOnly today = DateOnly.FromDateTime(DateTime.Now);
+
+            // Sprawdzenie czy pasażer jest niemowlęciem
+            bool isInfant = dateOfBirth > today.AddYears(-2);
+            // Sprawdzenie czy pasażer jest młodzieżą (2-16 lat)
+            bool isYouth = dateOfBirth <= today.AddYears(-2) && dateOfBirth > today.AddYears(-16);
+
+            // Przypadek 1: Niemowlęta
+            if (isInfant)
             {
-                isDomesticFlight? discount += 0.8 : discount += 0.7;
-                isEarlyReservation? discount += 0.1 : discount += 0;
-                if (discount > maxBabyDiscount) return maxBabyDiscount;
-
-                return discount;
+                discount = isDomesticFlight ? 0.8 : 0.7;
+                if (isEarlyReservation) discount += 0.1;
+                return (int)(Math.Min(discount, maxBabyDiscount) * 100);
             }
-            else if (isFlightInSeason)
+
+            // Przypadek 2: Lot krajowy
+            if (isDomesticFlight)
             {
-
+                if (isYouth) discount += 0.1;
+                if (isRegularCustomer) discount += 0.15;
+                if (isEarlyReservation) discount += 0.1;
             }
-            /*
-        SYSTEM RABATÓW LINII LOTNICZEJ
+            // Przypadek 3: Lot międzynarodowy
+            else
+            {
+                // Tylko jeśli lot jest poza sezonem
+                if (!isFlightInSeason)
+                {
+                    discount += 0.15; // Podstawowy rabat za lot międzynarodowy poza sezonem
+                    if (isYouth) discount += 0.1;
+                    if (isRegularCustomer) discount += 0.15;
+                    if (isEarlyReservation) discount += 0.1;
+                }
+                // Jeśli lot w sezonie - brak rabatów
+            }
 
-        1. RABATY WIEKOWE:
-        - Niemowlęta (< 2 lat):
-            * 80% - loty krajowe
-            * 70% - loty międzynarodowe
-        - Młodzież (2-16 lat):
-            * 10% - wszystkie loty
-
-        2. RABATY DODATKOWE:
-        - Wczesna rezerwacja (5 miesięcy przed): 10%
-        - Poza sezonem (tylko loty międzynarodowe): 15%
-        - Stały klient (tylko 18+ lat): 15%
-
-        3. OGRANICZENIA:
-        - Loty międzynarodowe: rabaty tylko dla niemowląt lub lotów poza sezonem
-        - Max łączny rabat:
-            * 80% - niemowlęta
-            * 30% - pozostali pasażerowie
-
-        4. SEZONY (okresy bez zniżek):
-        - 20.12 - 10.01
-        - 20.03 - 10.04
-        - 01.07 - 31.08
-        */
+            //Zwracanie wartości rabatu w procentach, jeżeli jest ona mniejsza od maksymalnego rabatu, w innym przypadku zwraca sie maksymalny raba
+            return (int)(Math.Min(discount, maxRegularDiscount) * 100);
         }
+
+        /*
+    SYSTEM RABATÓW LINII LOTNICZEJ
+
+    1. RABATY WIEKOWE:
+    - Niemowlęta (< 2 lat):
+        * 80% - loty krajowe
+        * 70% - loty międzynarodowe
+    - Młodzież (2-16 lat):
+        * 10% - wszystkie loty
+
+    2. RABATY DODATKOWE:
+    - Wczesna rezerwacja (5 miesięcy przed): 10%
+    - Poza sezonem (tylko loty międzynarodowe): 15%
+    - Stały klient (tylko 18+ lat): 15%
+
+    3. OGRANICZENIA:
+    - Loty międzynarodowe: rabaty tylko dla niemowląt lub lotów poza sezonem
+    - Max łączny rabat:
+        * 80% - niemowlęta
+        * 30% - pozostali pasażerowie
+
+    4. SEZONY (okresy bez zniżek):
+    - 20.12 - 10.01
+    - 20.03 - 10.04
+    - 01.07 - 31.08
+    */
+
         private static bool CheckIsFlightInSeason(DateOnly dateOfFlight)
         {
             // Okres świąteczno-noworoczny (20.12 - 10.01)
-            if ((dataLotu.Month == 12 && dataLotu.Day >= 20) ||
-                (dataLotu.Month == 1 && dataLotu.Day <= 10))
+            if ((dateOfFlight.Month == 12 && dateOfFlight.Day >= 20) ||
+                (dateOfFlight.Month == 1 && dateOfFlight.Day <= 10))
                 return true;
 
             // Okres wiosenny (20.03 - 10.04)
-            if ((dataLotu.Month == 3 && dataLotu.Day >= 20) ||
-                (dataLotu.Month == 4 && dataLotu.Day <= 10))
+            if ((dateOfFlight.Month == 3 && dateOfFlight.Day >= 20) ||
+                (dateOfFlight.Month == 4 && dateOfFlight.Day <= 10))
                 return true;
 
             // Okres wakacyjny (lipiec i sierpień)
-            if (dataLotu.Month == 7 || dataLotu.Month == 8)
+            if (dateOfFlight.Month == 7 || dateOfFlight.Month == 8)
                 return true;
 
             return false;
         }
         private static bool CheckEarlyReservation(DateOnly dateOfFlight)
         {
+            DateOnly today = DateOnly.FromDateTime(DateTime.Now);
             // Obliczamy różnicę w miesiącach
-            int MonthDiff = ((dateOfFlight.Year - DateOnly.Now.Year) * 12) + (dateOfFlight.Month - DateOnly.Now.Month);
+            int MonthDiff = ((dateOfFlight.Year - today.Year) * 12) + (dateOfFlight.Month - today.Month);
             return MonthDiff >= 5;
         }
         private static (DateOnly dateOfBirth, DateOnly dateOfFlight, bool isDomesticFlight, bool isRegularCustomer) GetUserInput()
@@ -108,7 +147,7 @@ namespace RabatyLiniLotniczej
                     Console.WriteLine("Czy jesteś stałym klientem (T/N)? ");
                     isRegularCustomer = ValidateAndParseYesNo(Console.ReadLine(), "czy stały klient?");
                     if (isRegularCustomer)
-                        validateIsRegularCustomerCorrect(dateOfBirth);
+                        ValidateIsRegularCustomerCorrect(dateOfBirth.Value);
 
                     success = true;
                 }
@@ -167,10 +206,13 @@ namespace RabatyLiniLotniczej
             return trimmedInput == "T" ? true : false;
         }
 
-        private static void validateIsRegularCustomerCorrect(DateOnly dateOfBirth)
+        private static void ValidateIsRegularCustomerCorrect(DateOnly dateOfBirth)
         {
-            int YearsDiff = OnlyDate.Now.Year - dateOfBirth.Year;
-            if (YearsDiff < 18) throw new ArgumentException($"Aby być stałym klientem musisz mieć ukończone 18 lat"); ;
+            DateOnly today = DateOnly.FromDateTime(DateTime.Now);
+            DateOnly minimumBirthDate = today.AddYears(-18); // Data 18 lat temu
+
+            if (dateOfBirth > minimumBirthDate)
+                throw new ArgumentException("Aby być stałym klientem musisz mieć ukończone 18 lat");
         }
 
         private static void PrintTicketInfo(DateOnly dateOfBirth, DateOnly dateOfFlight, bool isDomesticFlight, bool isRegularCustomer)
@@ -180,7 +222,7 @@ namespace RabatyLiniLotniczej
             Console.WriteLine($"Data lotu: {FormatDate(dateOfFlight)}");
             Console.WriteLine($"{(isDomesticFlight ? "Lot krajowy" : "Lot międzynarodowy")}");
             Console.WriteLine($"Stały klient: {(isRegularCustomer ? "Tak" : "Nie")}");
-            Console.WriteLine("=========================\n");
+            Console.WriteLine("=========================");
         }
 
         private static string FormatDate(DateOnly date)
