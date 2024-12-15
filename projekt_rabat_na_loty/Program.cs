@@ -5,6 +5,7 @@ namespace RabatyLiniLotniczej
 
     public static class FlightTicketSystem
     {
+        #region Main Program Flow
         public static void Main(string[] args)
         {
             Console.WriteLine("Witamy w systemie rabatów lini lotniczych!");
@@ -13,9 +14,10 @@ namespace RabatyLiniLotniczej
             PrintTicketInfo(dateOfBirth, dateOfFlight, isDomesticFlight, isRegularCustomer);
             Console.WriteLine("------------------------------------------");
             PrintDiscountInfo(CalculateDiscount(dateOfBirth, dateOfFlight, isDomesticFlight, isRegularCustomer));
-            CalculateDiscount(dateOfBirth, dateOfFlight, isDomesticFlight, isRegularCustomer);
         }
+        #endregion
 
+        #region Discount Calculation
         /// <summary>
         /// Oblicza końcowy rabat na podstawie danych pasażera i lotu.
         /// </summary>
@@ -23,7 +25,7 @@ namespace RabatyLiniLotniczej
         /// <param name="dateOfFlight">Data lotu</param>
         /// <param name="isDomesticFlight">Czy lot jest krajowy</param>
         /// <param name="isRegularCustomer">Czy pasażer jest stałym klientem</param>
-        /// <returns>Wartość rabatu w procentach (0-30 dla regularnych, 0-80 dla niemowląt)</returns>
+        /// <returns> discount - Wartość rabatu w procentach (0-30 dla regularnych, 0-80 dla niemowląt)</returns>
         private static int CalculateDiscount(DateOnly dateOfBirth, DateOnly dateOfFlight, bool isDomesticFlight, bool isRegularCustomer)
         {
             double discount = 0;
@@ -131,10 +133,12 @@ namespace RabatyLiniLotniczej
         {
             DateOnly today = DateOnly.FromDateTime(DateTime.Now);
             // Obliczamy różnicę w miesiącach
-            int MonthDiff = ((dateOfFlight.Year - today.Year) * 12) + (dateOfFlight.Month - today.Month);
-            return MonthDiff >= 5 ? true : false;
+            int monthsBetweenDates = ((dateOfFlight.Year - today.Year) * 12) + (dateOfFlight.Month - today.Month);
+            return monthsBetweenDates >= 5 ? true : false;
         }
+        #endregion
 
+        #region User Input and Validation
         /// <summary>
         /// Pobiera i waliduje wszystkie dane wejściowe od użytkownika.
         /// </summary>
@@ -278,7 +282,9 @@ namespace RabatyLiniLotniczej
             if (dateOfBirth > minimumBirthDate)
                 throw new ArgumentException("Aby być stałym klientem musisz mieć ukończone 18 lat");
         }
+        #endregion
 
+        #region Output Formatting
         /// <summary>
         /// Wyświetla informację o przyznanym rabacie.
         /// </summary>
@@ -316,6 +322,8 @@ namespace RabatyLiniLotniczej
             // Zamienia fornat na np:  wtorek, 4 lipca 2023
             return date.ToString("dddd, d MMMM yyyy", new System.Globalization.CultureInfo("pl-PL"));
         }
+
+        #endregion
     }
 
 }
