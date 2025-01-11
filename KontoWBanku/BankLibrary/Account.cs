@@ -28,83 +28,145 @@ namespace Bank
         bool Withdrawal(decimal amount);
     }
 
+    public interface IAccountWithLimit : IAccount
+    {
+        // przyznany limit debetowy
+        // mozliwość zmiany, jeśli konto nie jest zablokowane
+        decimal OneTimeDebetLimit { get; set; }
+
+        // dostępne środki, z uwzględnieniem limitu
+        decimal AvaibleFounds { get; }
+    }
     public class Account : IAccount
     {
-        private readonly string _name;
-        private decimal _balance = 0;
-        private bool _isBlocked = false;
+        protected const int PRECISION = 4;
 
-        public string Name
-        {
-            get { return _name; }
-        }
+        public string Name { get; }
+        public decimal Balance { get; private set; }
 
-        public decimal Balance
-        {
-            get { return _balance; }
-            private set
-            {
-                if (value < 0)
-                {
-                    throw new ArgumentOutOfRangeException();
-                }
-                _balance = Math.Round(value, 4);
-            }
-        }
 
-        public bool IsBlocked
-        {
-            get { return _isBlocked; }
-            private set { _isBlocked = value; }
-        }
+        public bool IsBlocked { get; private set; } = false;
+        public void Block() => IsBlocked = true;
+        public void Unblock() => IsBlocked = false;
 
-        public Account(string name, decimal balance = 0)
+        public Account(string name, decimal initialBalance = 0)
         {
-            if (name == null)
-            {
+            if (name == null || initialBalance < 0)
                 throw new ArgumentOutOfRangeException();
-            }
-            var processedName = name.Trim();
-            if (processedName.Length < 3)
-            {
+            Name = name.Trim();
+            if (Name.Length < 3)
                 throw new ArgumentException();
-            }
-            _name = processedName;
-            Balance = balance;
-        }
-
-        public void Block()
-        {
-            IsBlocked = true;
-        }
-
-        public void Unblock()
-        {
-            IsBlocked = false;
+            Balance = Math.Round(initialBalance, PRECISION);
         }
 
         public bool Deposit(decimal amount)
         {
             if (amount <= 0 || IsBlocked) return false;
-            Balance += amount;
+
+            Balance = Math.Round(Balance += amount, PRECISION);
             return true;
         }
 
         public bool Withdrawal(decimal amount)
         {
-            if (amount <= 0 || IsBlocked || Balance < amount) return false;
-            Balance -= amount;
+            if (amount <= 0 || IsBlocked || amount > Balance) return false;
+
+            Balance = Math.Round(Balance -= amount, PRECISION);
             return true;
         }
 
-        public override string ToString()
+        public override string ToString() =>
+            IsBlocked ? $"Account name: {Name}, balance: {Balance:F2}, blocked"
+                        : $"Account name: {Name}, balance: {Balance:F2}";
+    }
+
+    public class AccountPlus : Bank.Account, Bank.IAccountWithLimit
+    {
+        private decimal _oneTimeDebetLimit;
+        private decimal _usedLimit;
+        private bool _isManuallyBlocked;
+
+        public decimal OneTimeDebetLimit
         {
-            var balanceStr = Balance.ToString("F2");
-            if (IsBlocked)
+            get => _oneTimeDebetLimit;
+            set
             {
-                return string.Format("Account name: {0}, balance: {1}, blocked", Name, balanceStr);
+                if (IsBlocked || value < 0) return;
+                _oneTimeDebetLimit = value;
             }
-            return string.Format("Account name: {0}, balance: {1}", Name, balanceStr);
         }
+
+        public decimal AvaibleFounds => Balance + (OneTimeDebetLimit - _usedLimit);
+
+        public AccountPlus(string name, decimal initialBalance = 0, decimal initialLimit = 100)
+            : base(name, initialBalance)
+        {
+            _oneTimeDebetLimit = initialLimit < 0 ? 0 : initialLimit;
+        }
+
+        public new bool Withdrawal(decimal amount)
+        {
+            if (amount <= 0 || IsBlocked || AvaibleFounds < amount)
+                return false;
+
+            // Standardowa wypłata
+            if (amount <= Balance)
+                return base.Withdrawal(amount);
+
+            // Wypłata z użyciem limitu
+            decimal fromBalance = Balance;
+            if (base.Withdrawal(fromBalance))  // Najpierw wypłacamy całe saldo
+            {
+                _usedLimit = amount - fromBalance;  // Reszta z limitu
+                Block();
+                return true;
+            }
+
+            return false;
+        }
+
+        public new bool Deposit(decimal amount)
+        {
+            if (amount <= 0) return false;
+
+            if (_usedLimit > 0)
+            {
+                // Najpierw wpłacamy całość na konto
+                if (!base.Deposit(amount))
+                    return false;
+
+                // Następnie rozliczamy limit
+                decimal toLimit = Math.Min(amount, _usedLimit);
+                _usedLimit -= toLimit;
+
+                // Odblokowujemy konto jeśli spłaciliśmy cały limit
+                if (_usedLimit == 0 && !_isManuallyBlocked)
+                {
+                    base.Unblock();
+                }
+
+                return true;
+            }
+
+            return base.Deposit(amount);
+        }
+
+        public new void Block()
+        {
+            _isManuallyBlocked = true;
+            base.Block();
+        }
+
+        public new void Unblock()
+        {
+            if (_usedLimit > 0) return;
+            _isManuallyBlocked = false;
+            base.Unblock();
+        }
+
+        public override string ToString() =>
+            IsBlocked
+                ? $"Account name: {Name}, balance: {Balance:F2}, blocked, avaible founds: {AvaibleFounds:F2}, limit: {OneTimeDebetLimit:F2}"
+                : $"Account name: {Name}, balance: {Balance:F2}, avaible founds: {AvaibleFounds:F2}, limit: {OneTimeDebetLimit:F2}";
     }
 }
