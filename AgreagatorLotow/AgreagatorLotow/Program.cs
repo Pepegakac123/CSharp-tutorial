@@ -11,7 +11,7 @@ namespace AgreagatorLotow
         {
             int n = int.Parse(Console.ReadLine());
 
-            Dictionary<string, UserData> users = new Dictionary<string, UserData>();
+            var users = new Dictionary<string, UserData>();
             for (int i = 0; i < n; i++)
             {
                 string[] input = Console.ReadLine().Split(" ");

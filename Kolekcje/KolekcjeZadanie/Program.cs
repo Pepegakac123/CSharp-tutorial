@@ -10,19 +10,16 @@ int[] a = new int[] { -2, -1, 0, 1, 4 };
     }
         //public static void Print(int[] a, int[] b)
         //{
-        //    HashSet<int> setA = new HashSet<int>(a);
-        //    HashSet<int> setB = new HashSet<int>(b);
-        //    HashSet<int> exceptA = new HashSet<int>(setA);
-        //    HashSet<int> exceptB = new HashSet<int>(setB);
-        //    exceptA.ExceptWith(setB);
-        //    exceptB.ExceptWith(setA);
+        //    HashSet<int> setAExceptB = new HashSet<int>(a);
+        //    setAExceptB.ExceptWith(b);
+        //    HashSet<int> setBExceptA = new HashSet<int>(b);
+        //    setBExceptA.ExceptWith(a);
+
+        //    int[] result = new int[setAExceptB.Count + setBExceptA.Count];
 
 
-        //    int[] result = new int[exceptA.Count + exceptB.Count];
-
-
-        //    exceptA.CopyTo(result, 0);
-        //    exceptB.CopyTo(result, exceptA.Count);
+        //    setAExceptB.CopyTo(result, 0);
+        //    setBExceptA.CopyTo(result, exceptA.Count);
 
 
         //    Array.Sort(result);
@@ -33,9 +30,9 @@ int[] a = new int[] { -2, -1, 0, 1, 4 };
         public static void Print(int[] a, int[] b)
         {
             HashSet<int> result = new HashSet<int>(a);
-            result.SymmetricExceptWith(b);  // znajduje elementy które są w A lub B, ale nie w obu
+            result.SymmetricExceptWith(b); 
 
-            // Konwertujemy na posortowaną tablicę
+            
             int[] sorted = new int[result.Count];
             result.CopyTo(sorted);
             Array.Sort(sorted);
