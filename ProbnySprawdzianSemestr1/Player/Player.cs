@@ -9,16 +9,8 @@ public class Player
     public Player(string name, string password)
     {
         // Najpierw sprawdzamy nazwę
-        if (name == null) throw new ArgumentException("Wrong name!");
-        string processedName = name.Replace(" ", "");
-        if (processedName.Length < 3 || !char.IsLetter(processedName[0]))
-            throw new ArgumentException("Wrong name!");
-        foreach (char c in processedName)
-        {
-            if (!char.IsLetter(c) && !char.IsDigit(c))
-                throw new ArgumentException("Wrong name!");
-        }
-        _name = processedName.ToLower();
+
+        _name = IsNameValid(name);
 
         // Następnie sprawdzamy hasło
         if (!IsPasswordValid(password))
@@ -26,25 +18,14 @@ public class Player
         _password = password;
     }
 
+
+
     public string Name
     {
         get => _name;
         set
         {
-            if (value == null) throw new ArgumentException("Wrong name!");
-            string processedValue = value.Replace(" ", "");
-            if (processedValue.Length < 3)
-                throw new ArgumentException("Wrong name!");
-            if (!char.IsLetter(processedValue[0]))
-                throw new ArgumentException("Wrong name!");
-            char[] chars = processedValue.ToCharArray();
-            for (int i = 0; i < chars.Length; i++)
-            {
-                if (!char.IsLetter(chars[i]) && !char.IsDigit(chars[i]))
-                    throw new ArgumentException("Wrong name!");
-                chars[i] = char.ToLower(chars[i]);
-            }
-            _name = new string(chars);
+            _name = IsNameValid(value);
         }
     }
 
@@ -113,6 +94,20 @@ public class Player
         }
 
         return hasLower && hasUpper && hasDigit && hasPunctuation;
+    }
+
+    private string IsNameValid(string name)
+    {
+        if (name == null) throw new ArgumentException("Wrong name!");
+        string processedName = name.Replace(" ", "");
+        if (processedName.Length < 3 || !char.IsLetter(processedName[0]))
+            throw new ArgumentException("Wrong name!");
+        foreach (char c in processedName)
+        {
+            if (!char.IsLetter(c) && !char.IsDigit(c))
+                throw new ArgumentException("Wrong name!");
+        }
+        return processedName.ToLower();
     }
 
     public override string ToString()

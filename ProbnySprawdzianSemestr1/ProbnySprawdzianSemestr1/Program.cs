@@ -6,7 +6,7 @@ namespace ProbnySprawdzianSemestr1
     {
         static void Main(string[] args)
         {
-            
+
         }
         public static void Analyze(string logs)
         {
@@ -43,27 +43,12 @@ namespace ProbnySprawdzianSemestr1
 
             foreach (var user in users)
             {
-                if (user.Value.Dates.Count == allDates.Count)
-                {
-                    bool hasAllDates = true;
-                    foreach (var date in allDates)
-                    {
-                        if (!user.Value.Dates.Contains(date))
-                        {
-                            hasAllDates = false;
-                            break;
-                        }
-                    }
-                    if (hasAllDates)
-                    {
-                        result.Add(user.Key);
-                    }
-                }
+                if (user.Value.Dates.Count == allDates.Count) result.Add(user.Key);
             }
             if (result.Count == 0)
             {
                 Console.WriteLine("empty");
-                return;      
+                return;
             }
             Console.WriteLine(string.Join(", ", result));
 
@@ -75,7 +60,7 @@ namespace ProbnySprawdzianSemestr1
             public HashSet<string> Dates { get; set; }
             public string IpAddress { get; set; }
 
-            public Log(string date,  string ipAddress)
+            public Log(string date, string ipAddress)
             {
                 Dates = new HashSet<string>();
                 Dates.Add(date.ToString());
