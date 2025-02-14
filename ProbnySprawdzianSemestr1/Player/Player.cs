@@ -1,4 +1,5 @@
 ﻿using System.Linq;
+using System.Collections.Generic;
 public class Player
 {
     private string _name;
@@ -10,7 +11,7 @@ public class Player
     {
         // Najpierw sprawdzamy nazwę
 
-        _name = IsNameValid(name);
+        Name = name;
 
         // Następnie sprawdzamy hasło
         if (!IsPasswordValid(password))
@@ -47,7 +48,7 @@ public class Player
     public void AddScore(int currentScore)
     {
         if (currentScore < 0 || currentScore > 100)
-            throw new ArgumentOutOfRangeException("Wrong value!", "Wrong value!");
+            throw new ArgumentOutOfRangeException("Wrong value!");
         _scores.Add(currentScore);
     }
 

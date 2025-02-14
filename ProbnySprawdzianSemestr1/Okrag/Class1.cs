@@ -1,5 +1,7 @@
-﻿namespace FiguryLib;
-
+﻿using System;
+using System.Linq;
+using System.Collections.Generic;
+using FiguryLib;
 public interface IMierzalna1D
 {
     double Dlugosc { get; }
