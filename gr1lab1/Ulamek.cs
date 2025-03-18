@@ -44,7 +44,7 @@ namespace Gr1Lab1
     }
 
 
-    class Ulamek : IComparable<Ulamek>
+    class Ulamek : IComparable<Ulamek>, IEquatable<Ulamek>
     {
         public int licznik;
         public int mianownik;
@@ -64,8 +64,6 @@ namespace Gr1Lab1
                 licznik = -licznik;
                 mianownik = -mianownik;
             }
-
-            // Upraszczanie Ułamka
             Uproscic();
         }
 
@@ -162,12 +160,16 @@ namespace Gr1Lab1
         public static explicit operator double(Ulamek a) => a.licznik / (double)a.mianownik;
 
         // Jeśli klasa przeciąża operatory == i !=, należy również nadpisać Equals() oraz GetHashCode()
+        // Implementacja interfejsu IEquatable
+        public bool Equals(Ulamek? other)
+        {
+            if (other is null) return false;
+            return licznik == other.licznik && mianownik == other.mianownik;
+        }
+
         public override bool Equals(object? obj)
         {
-            if (obj is Ulamek other)
-            {
-                return this == other;
-            }
+            if (obj is Ulamek other) return Equals(other);
             return false;
         }
 
