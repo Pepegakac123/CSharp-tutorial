@@ -63,13 +63,7 @@ Podczas pracy korzystałem głównie z dokumentacji Microsoft, szczególnie przy
 
 ### 5.1. Implementacja klasy Ulamek
 
-Klasa `Ulamek` została zdefiniowana z dwoma podstawowymi polami:
-```csharp
-public int licznik;
-public int mianownik;
-```
-
-Chociaż użycie publicznych pól nie jest najlepszą praktyką (narusza hermetyzację), w tym przypadku zastosowałem je dla uproszczenia. 
+Klasa `Ulamek` została zdefiniowana z dwoma podstawowymi polami licznik i ułamek. Chociaż użycie publicznych pól nie jest najlepszą praktyką (narusza hermetyzację), w tym przypadku zastosowałem je dla uproszczenia. 
 
 ### 5.2. Konstruktor i upraszczanie ułamków
 
