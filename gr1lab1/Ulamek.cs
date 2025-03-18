@@ -157,7 +157,7 @@ namespace Gr1Lab1
 
         public static bool operator !=(Ulamek? a, Ulamek? b) => !(a == b);
 
-        public static explicit operator double(Ulamek a) => a.licznik / (double)a.mianownik;
+        public static explicit operator double(Ulamek a) => (double)a.licznik / (double)a.mianownik;
 
         // Jeśli klasa przeciąża operatory == i !=, należy również nadpisać Equals() oraz GetHashCode()
         // Implementacja interfejsu IEquatable
