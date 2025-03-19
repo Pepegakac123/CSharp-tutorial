@@ -2,17 +2,15 @@
 
 Wyższa Szkoła Ekonomii i Informatyki w Krakowie
 
-| Ćw nr: | Temat: |
-|--------|--------|
-| L-1 | Implementacja „dobrze uformowanego typu" na przykładzie klasy/struktury Ulamek |
-
-| Nazwisko i imię: | Nr albumu: | Kierunek: | Rok akademicki: |
-|------------------|------------|-----------|-----------------|
+| Ćw nr:   | Temat:                                                                     |
+|----------|----------------------------------------------------------------------------|
+| L-1      | Implementacja „dobrze uformowanego typu" na przykładzie klasy/struktury Ułamek |
+|          |                                                                            |
+| **Nazwisko i imię:** | **Nr albumu:** | **Kierunek:** | **Rok akademicki:** |
 | Kacper Adamczyk | 15606 | Informatyka Stosowana | 2024/2025 |
-
-| Grupa Lab: | Data wykonania: | Data złożenia: | Ocena: |
-|------------|-----------------|---------------|--------|
-| Lab1 | 18.03.2025 | 22.03.2025 |  |
+|          |                                                                            |
+| **Grupa Lab:** | **Data wykonania:** | **Data złożenia:** | **Ocena:** |
+| Lab1 | 18.03.2025 | 22.03.2025 | |
 
 ## 1. Opis środowiska pracy
 
@@ -25,7 +23,7 @@ Wyższa Szkoła Ekonomii i Informatyki w Krakowie
 
 ## 2. Wstęp
 
-Celem tego laboratorium było stworzenie własnego typu danych w C# - klasy `Ulamek`, która reprezentuje ułamek matematyczny. Tworzenie "dobrze uformowanego typu" to ważna umiejętność w programowaniu obiektowym, pozwalająca tworzyć kod, który jest łatwy w użyciu i zgodny z konwencjami języka.
+Celem tego laboratorium było stworzenie własnego typu danych w C# - klasy `Ulamek`, która reprezentuje ułamek matematyczny. Tworzenie dobrze zaprojektowanego typu to kluczowy element programowania obiektowego, który pozwala na tworzenie zgodnego ze standardami kodu, ułatwiając jego późniejsze wykorzystanie oraz utrzymanie.
 
 Klasa `Ulamek` świetnie nadaje się do ćwiczenia, bo wymaga zaimplementowania różnych mechanizmów C#: konstruktorów, metod, przeciążania operatorów oraz implementacji interfejsów.
 
@@ -74,7 +72,7 @@ Zaimplementowałem konstruktor [1], który:
 
 Dla upraszczania ułamków napisałem metodę `NajwiekszyWspolnyDzielnik` [2] wykorzystującą algorytm Euklidesa oraz metodę `Uproscic` [3], która dzieli licznik i mianownik przez ich NWD.
 
-### 5.3. Reprezentacja tekstowa
+### 5.3. Reprezentacja tekstowa `toString`
 
 Zdefiniowałem prostą reprezentację tekstową ułamka w postaci "licznik/mianownik" [4].
 ### 5.4. Operatory arytmetyczne
@@ -119,17 +117,17 @@ Do sprawdzenia poprawności implementacji klasy `Ulamek` przygotowałem serię t
 
 Wyniki testów:
 ```
-Test 1: 1/2 * 1/4 = 1/8
-Test 2: 1/2 + 1/4 = 3/4
-Test 3: 1/2 - 1/4 = 1/4
-Test 4: 1/2 / 1/4 = 2/1
-Test 5: 1/2 > 1/4 ? True
-Test 6: 1/2 < 1/4 ? False
-Test 7: 1/2 >= 1/4 ? True
-Test 8: 1/2 <= 1/4 ? False
-Test 9: (double)1/2 = 0.5
-Test 10: Tablica przed sortowaniem: 1/5, 4/5, 3/5, 2/5, 2/8
-Test 11: Tablica po sortowaniu: 1/5, 1/4, 2/5, 3/5, 4/5
+## Test 1: 1/2 * 1/4 = 1/8
+## Test 2: 1/2 + 1/4 = 3/4
+## Test 3: 1/2 - 1/4 = 1/4
+## Test 4: 1/2 / 1/4 = 2/1
+## Test 5: 1/2 > 1/4 ? True
+## Test 6: 1/2 < 1/4 ? False
+## Test 7: 1/2 >= 1/4 ? True
+## Test 8: 1/2 <= 1/4 ? False
+## Test 9: (double)1/2 = 0.5
+## Test 10: Tablica przed sortowaniem: 1/5, 4/5, 3/5, 2/5, 2/8
+## Test 11: Tablica po sortowaniu: 1/5, 1/4, 2/5, 3/5, 4/5
 ```
 
 Wszystkie testy zakończyły się pomyślnie, co potwierdza poprawność implementacji.
@@ -144,8 +142,7 @@ Napotkane problemy:
 Laboratorium pozwoliło mi praktycznie zastosować i lepiej zrozumieć kilka ważnych koncepcji w C#:
 
 1. **Tworzenie "dobrze uformowanego typu"** - nauczyłem się, jakie elementy powinien zawierać poprawnie zaprojektowany typ danych.
-2. **Przeciążanie operatorów** - zrozumiałem, jak zapewnić obsługę własnych typów operatorów.
-3. **Implementacja interfejsów** - poznałem zasady implementacji `IComparable` i `IEquatable`.
+2. **Implementacja interfejsów** - poznałem zasady implementacji `IComparable` i `IEquatable`.
 
 
 Uważam, że zaimplementowany przeze mnie typ `Ulamek` spełnia podstawowe wymagania stawiane "dobrze uformowanym typom" w C#. Klasa:
@@ -157,7 +154,7 @@ Uważam, że zaimplementowany przeze mnie typ `Ulamek` spełnia podstawowe wymag
 
 ## 8. Odnośniki
 
-1. Konstruktor klasy Ulamek:
+[1] Konstruktor klasy Ulamek:
 ```csharp
 public Ulamek(int inLicznik, int inMianownik)
 {
@@ -178,7 +175,7 @@ public Ulamek(int inLicznik, int inMianownik)
 }
 ```
 
-2. Metoda NajwiekszyWspolnyDzielnik:
+[2] Metoda NajwiekszyWspolnyDzielnik:
 ```csharp
 public static int NajwiekszyWspolnyDzielnik(int a, int b)
 {
@@ -194,7 +191,7 @@ public static int NajwiekszyWspolnyDzielnik(int a, int b)
 }
 ```
 
-3. Metoda Uproscic:
+[3] Metoda Uproscic:
 ```csharp
 private void Uproscic()
 {
@@ -208,12 +205,12 @@ private void Uproscic()
 }
 ```
 
-4. Metoda ToString:
+[4] Metoda ToString:
 ```csharp
 public override string ToString() => $"{licznik}/{mianownik}";
 ```
 
-5. Operator mnożenia:
+[5] Operator mnożenia:
 ```csharp
 public static Ulamek operator *(Ulamek a, Ulamek b)
 {
@@ -223,7 +220,7 @@ public static Ulamek operator *(Ulamek a, Ulamek b)
 }
 ```
 
-6. Operator dodawania:
+[6] Operator dodawania:
 ```csharp
 public static Ulamek operator +(Ulamek a, Ulamek b)
 {
@@ -233,7 +230,7 @@ public static Ulamek operator +(Ulamek a, Ulamek b)
 }
 ```
 
-7. Operator odejmowania:
+[7] Operator odejmowania:
 ```csharp
 public static Ulamek operator -(Ulamek a, Ulamek b)
 {
@@ -243,7 +240,7 @@ public static Ulamek operator -(Ulamek a, Ulamek b)
 }
 ```
 
-8. Operator dzielenia:
+[8] Operator dzielenia:
 ```csharp
 public static Ulamek operator /(Ulamek a, Ulamek b)
 {
@@ -257,19 +254,19 @@ public static Ulamek operator /(Ulamek a, Ulamek b)
 }
 ```
 
-9. Operatory > i <:
+[9] Operatory > i <:
 ```csharp
 public static bool operator >(Ulamek a, Ulamek b) => a.licznik * b.mianownik > b.licznik * a.mianownik;
 public static bool operator <(Ulamek a, Ulamek b) => a.licznik * b.mianownik < b.licznik * a.mianownik;
 ```
 
-10. Operatory >= i <=:
+[10] Operatory >= i <=:
 ```csharp
 public static bool operator >=(Ulamek a, Ulamek b) => a.licznik * b.mianownik >= b.licznik * a.mianownik;
 public static bool operator <=(Ulamek a, Ulamek b) => a.licznik * b.mianownik <= b.licznik * a.mianownik;
 ```
 
-11. Operatory == i !=:
+[11] Operatory == i !=:
 ```csharp
 public static bool operator ==(Ulamek? a, Ulamek? b)
 {
@@ -282,7 +279,7 @@ public static bool operator ==(Ulamek? a, Ulamek? b)
 public static bool operator !=(Ulamek? a, Ulamek? b) => !(a == b);
 ```
 
-12. Implementacja CompareTo:
+[12] Implementacja CompareTo:
 ```csharp
 public int CompareTo(Ulamek? other)
 {
@@ -294,7 +291,7 @@ public int CompareTo(Ulamek? other)
 }
 ```
 
-13. Implementacja Equals i GetHashCode:
+[13] Implementacja Equals i GetHashCode:
 ```csharp
 public bool Equals(Ulamek? other)
 {
@@ -314,12 +311,12 @@ public override int GetHashCode()
 }
 ```
 
-14. Konwersja na double:
+[14] Konwersja na double:
 ```csharp
 public static explicit operator double(Ulamek a) => a.licznik / (double)a.mianownik;
 ```
 
-15. Metoda Main z testami:
+[15] Metoda Main z testami:
 ```csharp
 static void Main(string[] args)
 {
