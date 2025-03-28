@@ -49,10 +49,10 @@ namespace Gr1Lab1
             };
 
             biurowy.PokazInformacje();
-            Console.WriteLine($"Roczne wynagrodzenie: {biurowy.ObliczRoczneWynagrodzenie()} Dzienne Wynagrodzenie {biurowy.ObliczDzienneWynagrodzenie(8)}");
+            Console.WriteLine($"Roczne wynagrodzenie: {biurowy.ObliczRoczneWynagrodzenie()} Miesieczne Wynagrodzenie {biurowy.ObliczMiesieczneWynagrodzenie()}");
 
             menedzer.PokazInformacje();
-            Console.WriteLine($"Roczne wynagrodzenie: {menedzer.ObliczRoczneWynagrodzenie()}, Dzienne Wynagrodzenie {menedzer.ObliczDzienneWynagrodzenie(8)}");
+            Console.WriteLine($"Roczne wynagrodzenie: {menedzer.ObliczRoczneWynagrodzenie()}, Miesieczne Wynagrodzenie {menedzer.ObliczMiesieczneWynagrodzenie()}");
 
 
         }

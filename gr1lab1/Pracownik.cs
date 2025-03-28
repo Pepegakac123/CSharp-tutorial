@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Gr1Lab1
+namespace Diagram2
 {
     public abstract class Pracownik
     {
@@ -14,11 +14,11 @@ namespace Gr1Lab1
         public decimal Wynagrodzenie { get; set; }
 
         public abstract void PokazInformacje();
-
-        public virtual decimal ObliczDzienneWynagrodzenie(decimal IloscGodzinPracy)
+        public virtual decimal ObliczDzienneWynagrodzenie()
         {
-            return ((Wynagrodzenie / 21) / 8) * IloscGodzinPracy;
+            return Wynagrodzenie / 22;
         }
+
         public virtual decimal ObliczMiesieczneWynagrodzenie()
         {
             return Wynagrodzenie;
@@ -38,28 +38,22 @@ namespace Gr1Lab1
             Console.WriteLine($"Pracownik biurowy: {Imie} {Nazwisko}, stanowisko: {Stanowisko}, wynagrodzenie miesięczne: {Wynagrodzenie}, ilość godzin pracy: {IloscGodzinPracy}");
         }
 
-        // Przykład nadpisania metody
-        public override decimal ObliczRoczneWynagrodzenie()
+        public override decimal ObliczDzienneWynagrodzenie()
         {
-            // Dodajemy bonus roczny za godziny nadliczbowe
-            decimal bonus = (IloscGodzinPracy > 160 ? (IloscGodzinPracy - 160) * (Wynagrodzenie / 160) : 0);
-            return base.ObliczRoczneWynagrodzenie() + bonus;
+            decimal stawkaGodzinowa = Wynagrodzenie / IloscGodzinPracy;
+            return stawkaGodzinowa * 8;
         }
 
         public override decimal ObliczMiesieczneWynagrodzenie()
         {
+            decimal wynagrodzeniePodstawowe = Wynagrodzenie;
+            decimal bonusZaNadgodziny = (IloscGodzinPracy > 160) ? (IloscGodzinPracy - 160) * (Wynagrodzenie / 160) : 0;
+            return wynagrodzeniePodstawowe + bonusZaNadgodziny;
+        }
 
-            decimal podstawoweWynagrodzenie = Wynagrodzenie;
-
-
-            if (IloscGodzinPracy > 160)
-            {
-                decimal stawkaGodzinowa = Wynagrodzenie / 160;
-                decimal wynagrodzenieDodatkowe = (IloscGodzinPracy - 160) * stawkaGodzinowa * 1.5m;
-                return podstawoweWynagrodzenie + wynagrodzenieDodatkowe;
-            }
-
-            return podstawoweWynagrodzenie;
+        public override decimal ObliczRoczneWynagrodzenie()
+        {
+            return ObliczMiesieczneWynagrodzenie() * 12;
         }
     }
     public class Menedzer : Pracownik
@@ -71,46 +65,51 @@ namespace Gr1Lab1
             Console.WriteLine($"Menedżer: {Imie} {Nazwisko}, stanowisko: {Stanowisko}, wynagrodzenie miesięczne: {Wynagrodzenie}, bonus roczny: {BonusRoczny}");
         }
 
-        public override decimal ObliczRoczneWynagrodzenie()
+        public override decimal ObliczDzienneWynagrodzenie()
         {
-            return base.ObliczRoczneWynagrodzenie() + BonusRoczny;
+            return Wynagrodzenie / 22;
         }
+
         public override decimal ObliczMiesieczneWynagrodzenie()
         {
             return Wynagrodzenie;
         }
 
-        public override decimal ObliczDzienneWynagrodzenie(decimal IloscGodzinPracy)
+        // Już istniejąca, ale zaktualizowana metoda obliczania rocznego wynagrodzenia
+        public override decimal ObliczRoczneWynagrodzenie()
         {
-            // Stawka dzienna dla menedżera może być wyższa ze względu na odpowiedzialność
-            decimal podstawowaStawkaDzienna = base.ObliczDzienneWynagrodzenie(IloscGodzinPracy);
-            decimal dodatekZaOdpowiedzialnosc = podstawowaStawkaDzienna;
-
-            return podstawowaStawkaDzienna + dodatekZaOdpowiedzialnosc;
+            return ObliczMiesieczneWynagrodzenie() * 12 + BonusRoczny;
         }
-
     }
 
     public class PracownikZdalny : Pracownik
     {
         public int IloscDniZdalnych { get; set; }
+        public bool Terminowosc { get; set; }
 
         public override void PokazInformacje()
         {
             Console.WriteLine($"Pracownik zdalny: {Imie} {Nazwisko}, stanowisko: {Stanowisko}, wynagrodzenie miesięczne: {Wynagrodzenie}, ilość dni zdalnych: {IloscDniZdalnych}");
         }
+
+        public override decimal ObliczDzienneWynagrodzenie()
+        {
+            decimal podstawowaDniowka = Wynagrodzenie / IloscDniZdalnych;
+
+            return Terminowosc ? podstawowaDniowka * 1.1m : podstawowaDniowka; //bonus 10%
+        }
+
         public override decimal ObliczMiesieczneWynagrodzenie()
         {
-            return Wynagrodzenie;
+            decimal podstawoweWynagrodzenie = Wynagrodzenie;
+
+            return Terminowosc ? podstawoweWynagrodzenie * 1.15m : podstawoweWynagrodzenie; //bonus 15%
         }
 
-        public override decimal ObliczDzienneWynagrodzenie(decimal IloscGodzinPracy)
+        public override decimal ObliczRoczneWynagrodzenie()
         {
-            decimal podstawowaStawkaDzienna = base.ObliczDzienneWynagrodzenie(IloscGodzinPracy);
-
-            return podstawowaStawkaDzienna;
+            decimal podstawoweRoczne = ObliczMiesieczneWynagrodzenie() * 12;
+            return Terminowosc ? podstawoweRoczne + Wynagrodzenie : podstawoweRoczne;
         }
-
-        // Pracownik zdalny może mieć inne kryteria dla bonusów itp., dlatego możemy tu dodać dodatkowe metody lub nadpisać istniejące.
     }
 }

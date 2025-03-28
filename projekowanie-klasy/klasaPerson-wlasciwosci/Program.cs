@@ -10,9 +10,9 @@ namespace klasaPerson_wlasciwosci
 
         public Person(string familyName, string firstName, DateTime birthday)
         {
-            FamilyName = familyName;
-            FirstName = firstName;
-            Birthday = birthday;
+            this.familyName = familyName;
+            this.firstName = firstName;
+            this.birthday = birthday;
         }
 
         public string FamilyName
