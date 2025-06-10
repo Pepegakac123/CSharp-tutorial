@@ -26,7 +26,8 @@ namespace MusicPlayer
     public partial class MainWindow : Window
     {
         private ObservableCollection<Song> allSongs;
-        private SongManager songManager; 
+        private SongManager songManager;
+        private SongController songController;
 
         public MainWindow()
         {
@@ -39,6 +40,7 @@ namespace MusicPlayer
         {
             
             songManager = new SongManager();
+            songController = new SongController();
 
             allSongs = new ObservableCollection<Song>();
             SongsList.ItemsSource = allSongs;
@@ -77,7 +79,9 @@ namespace MusicPlayer
             songManager.SaveSongs(allSongs);
         }
 
-        // Dodawanie Piosenek
+        /// <summary>
+        /// Dodaje piosenki do listy
+        /// </summary>
         private void AddSongsButton_Click(object sender, RoutedEventArgs e)
         {
             OpenFileDialog dialog = new OpenFileDialog()
@@ -87,49 +91,34 @@ namespace MusicPlayer
                 Multiselect = true,
             };
 
-            if (dialog.ShowDialog() == true)
+            if (dialog.ShowDialog() != true) return;
+
+
+            int addedCount = 0;
+            int errorCount = 0;
+
+            foreach (string filePath in dialog.FileNames)
             {
-                int addedCount = 0;
-                int errorCount = 0;
-                foreach (string filePath in dialog.FileNames)
+                try
                 {
-                    try
+                    if (!songController.SongAlreadyExists(allSongs, filePath))
                     {
-                        bool alreadyExists = false;
-                        foreach (Song existingSong in allSongs)
-                        {
-                            if (existingSong.Path == filePath)
-                            {
-                                alreadyExists = true;
-                                break;
-                            }
-                        }
-
-                        if (!alreadyExists)
-                        {
-                            Song newSong = CreateSongFromFile(filePath);
-                            allSongs.Add(newSong);
-                            addedCount++;
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        errorCount++;
-                        MessageBox.Show($"Błąd podczas dodawania pliku {Path.GetFileName(filePath)}: {ex.Message}",
-                                    "Błąd", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        Song newSong = songController.CreateSongFromFile(filePath);
+                        allSongs.Add(newSong);
+                        addedCount++;
                     }
                 }
-
-                UpdateSongsCount();
-
-                string message = $"Dodano {addedCount} nowych utworów.";
-                if (errorCount > 0)
+                catch (Exception ex)
                 {
-                    message += $"\nBłędów: {errorCount}";
+                    errorCount++;
+                    string fileName = songController.GetFileNameOnly(filePath);
+                    MessageBox.Show($"Błąd podczas dodawania pliku {fileName}: {ex.Message}",
+                                "Błąd", MessageBoxButton.OK, MessageBoxImage.Warning);
                 }
-
-                MessageBox.Show(message, "Rezultat", MessageBoxButton.OK, MessageBoxImage.Information);
             }
+            UpdateSongsCount();
+            string message = songController.CreateResultMessage(addedCount, errorCount);
+            MessageBox.Show(message, "Rezultat", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
         /// Tworzy obiekt Song na podstawie sciezki do pliku
