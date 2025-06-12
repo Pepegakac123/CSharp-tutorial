@@ -26,6 +26,7 @@ namespace MusicPlayer
     public partial class MainWindow : Window
     {
         private ObservableCollection<Song> allSongs;
+        private ObservableCollection<string> playlists;
         private SongManager songManager;
         private SongController songController;
 
@@ -46,9 +47,15 @@ namespace MusicPlayer
             SongsList.ItemsSource = allSongs;
             AddSongsButton.Click += AddSongsButton_Click;
 
+            // Playlisty
+            playlists = new ObservableCollection<string>();
+            playlists.Add("AllSongs");
+            PlaylistsList.ItemsSource = playlists;
+            PlaylistsList.SelectedIndex = 0;
+
             this.Closing += MainWindow_Closing;
 
-            UpdateSongsCount();
+           UpdateSongsCount();
 
             // Automatycznie wczytaj utwory przy starcie używając SongManager
             LoadSongsFromFile();
@@ -119,52 +126,6 @@ namespace MusicPlayer
             UpdateSongsCount();
             string message = songController.CreateResultMessage(addedCount, errorCount);
             MessageBox.Show(message, "Rezultat", MessageBoxButton.OK, MessageBoxImage.Information);
-        }
-
-        /// Tworzy obiekt Song na podstawie sciezki do pliku
-        private Song CreateSongFromFile(string filePath)
-        {
-            if (!System.IO.File.Exists(filePath))
-            {
-                throw new FileNotFoundException("Plik nie istnieje");
-            }
-
-            string fileName = Path.GetFileNameWithoutExtension(filePath);
-            string title = fileName;
-            string author = "Nieznany Wykonawca";
-            TimeSpan duration = TimeSpan.Zero;
-
-            try
-            {
-                using (var file = TagLib.File.Create(filePath))
-                {
-                    if (!string.IsNullOrEmpty(file.Tag.Title))
-                    {
-                        title = file.Tag.Title;
-                    }
-
-                    if (file.Tag.Performers != null && file.Tag.Performers.Length > 0)
-                    {
-                        author = file.Tag.Performers[0]; // Pierwszy wykonawca
-                    }
-                    else if (!string.IsNullOrEmpty(file.Tag.FirstPerformer))
-                    {
-                        author = file.Tag.FirstPerformer;
-                    }
-
-                    if (file.Properties != null)
-                    {
-                        duration = file.Properties.Duration;
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message);
-            }
-
-            Song song = new Song(title, author, duration, filePath);
-            return song;
         }
 
         private void UpdateSongsCount()

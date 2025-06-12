@@ -69,7 +69,6 @@ namespace MusicPlayer
             catch (Exception ex)
             {
                 Console.WriteLine($"Błąd podczas czytania metadanych dla {fileName}: {ex.Message}");
-                // Używamy domyślnych wartości gdy nie można odczytać metadanych
             }
 
             return new Song(title, author, duration, filePath);
