@@ -12,6 +12,7 @@ namespace MusicPlayer
         public string Name { get; set; }
         public ObservableCollection<Song> Songs { get; set; }
         public DateTime CreatedAt { get; set; }
+        public bool IsSystemPlaylist { get; set; } = false; 
 
         //<summary>
         /// Konstruktor Domyślny
@@ -22,6 +23,7 @@ namespace MusicPlayer
             Name = "Nowa Playlista";
             Songs = new ObservableCollection<Song>();
             CreatedAt = DateTime.Now;
+
         }
 
         /// <summary>
@@ -117,7 +119,7 @@ namespace MusicPlayer
 
         public override string ToString()
         {
-            return $"{Name} ({SongCount} utworów)";
+            return Name;
         }
 
 

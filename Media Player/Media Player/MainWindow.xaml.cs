@@ -25,10 +25,14 @@ namespace MusicPlayer
     /// </summary>
     public partial class MainWindow : Window
     {
-        private ObservableCollection<Song> allSongs;
-        private ObservableCollection<string> playlists;
-        private SongManager songManager;
-        private SongController songController;
+        // GŁÓWNE ZMIENNE - struktura gotowa na rozbudowę
+        private ObservableCollection<Playlist> allPlaylists;  // Wszystkie playlisty (gotowe na więcej)
+        private Playlist currentPlaylist;                     // Aktualnie wybrana playlista
+        private ObservableCollection<Song> displayedSongs;    // Utwory wyświetlane w SongsList
+
+        // Pomocnicze klasy
+        private PlaylistManager songManager;
+        private SongManager songController;
 
         public MainWindow()
         {
@@ -36,61 +40,162 @@ namespace MusicPlayer
             InitializePlayer();
         }
 
-        // Inicjalizacja Odtwarzacza
+        /// <summary>
+        /// Inicjalizacja odtwarzacza - gotowa na rozbudowę
+        /// </summary>
         private void InitializePlayer()
         {
-            
-            songManager = new SongManager();
-            songController = new SongController();
+            // Inicjalizacja pomocniczych klas
+            songManager = new PlaylistManager();
+            songController = new SongManager();
 
-            allSongs = new ObservableCollection<Song>();
-            SongsList.ItemsSource = allSongs;
-            AddSongsButton.Click += AddSongsButton_Click;
+            // Inicjalizacja kolekcji - struktura dla wielu playlist
+            allPlaylists = new ObservableCollection<Playlist>();
+            displayedSongs = new ObservableCollection<Song>();
+            SongsList.ItemsSource = displayedSongs;
 
-            // Playlisty
-            playlists = new ObservableCollection<string>();
-            playlists.Add("AllSongs");
-            PlaylistsList.ItemsSource = playlists;
-            PlaylistsList.SelectedIndex = 0;
+            // Event handlery - podstawowe (gotowe na dodanie więcej)
+            SetupEventHandlers();
 
-            this.Closing += MainWindow_Closing;
+            // Załaduj dane z pliku
+            LoadPlaylistsFromFile();
 
-           UpdateSongsCount();
+            // Upewnij się że istnieje domyślna playlista
+            EnsureDefaultPlaylistExists();
 
-            // Automatycznie wczytaj utwory przy starcie używając SongManager
-            LoadSongsFromFile();
+            // Ustaw interfejs
+            SetupInitialInterface();
+
+            UpdateSongsCount();
         }
 
         /// <summary>
-        /// Wczytuje utwory z pliku używając SongManager
+        /// Konfiguruje event handlery - gotowe na dodanie więcej
         /// </summary>
-        private void LoadSongsFromFile()
+        private void SetupEventHandlers()
         {
-            
-            var loadedSongs = songManager.LoadSongs();
+            AddSongsButton.Click += AddSongsButton_Click;
+            PlaylistsList.SelectionChanged += PlaylistsList_SelectionChanged;
+            this.Closing += MainWindow_Closing;
 
-            allSongs.Clear();
-            foreach (var song in loadedSongs)
+            // TODO: W przyszłości dodamy tutaj:
+            // CreatePlaylistButton.Click += CreatePlaylistButton_Click;
+            // DeletePlaylistButton.Click += DeletePlaylistButton_Click;
+        }
+
+        /// <summary>
+        /// Zapewnia istnienie domyślnej playlisty "Wszystkie utwory"
+        /// </summary>
+        private void EnsureDefaultPlaylistExists()
+        {
+            // Szukaj domyślnej playlisty
+            var defaultPlaylist = FindPlaylistByName("Wszystkie utwory");
+
+            // Jeśli nie istnieje, utwórz ją
+            if (defaultPlaylist == null)
             {
-                allSongs.Add(song);
+                defaultPlaylist = new Playlist("Wszystkie utwory");
+                defaultPlaylist.IsSystemPlaylist = true;
+                allPlaylists.Add(defaultPlaylist);
+                Console.WriteLine("Utworzono domyślną playlistę 'Wszystkie utwory'");
+            }
+            else
+            {
+                Console.WriteLine($"Domyślna playlista istnieje z {defaultPlaylist.SongCount} utworami");
+            }
+
+            // Ustaw jako aktualną
+            currentPlaylist = defaultPlaylist;
+        }
+
+        /// <summary>
+        /// Ustawia początkowy interfejs
+        /// </summary>
+        private void SetupInitialInterface()
+        {
+            // Ustaw źródło danych dla listy playlist
+            PlaylistsList.ItemsSource = allPlaylists;
+
+            // Znajdź i wybierz domyślną playlistę
+            var defaultPlaylist = FindPlaylistByName("Wszystkie utwory");
+            if (defaultPlaylist != null)
+            {
+                PlaylistsList.SelectedItem = defaultPlaylist;
+            }
+
+            // Pokaż utwory z aktualnej playlisty
+            RefreshDisplayedSongs();
+        }
+
+        /// <summary>
+        /// GOTOWE NA ROZBUDOWĘ: Obsługuje zmianę wybranej playlisty
+        /// </summary>
+        private void PlaylistsList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (PlaylistsList.SelectedItem is Playlist selectedPlaylist)
+            {
+                currentPlaylist = selectedPlaylist;
+                RefreshDisplayedSongs();
+
+                Console.WriteLine($"Zmieniono playlistę na: {selectedPlaylist.Name} ({selectedPlaylist.SongCount} utworów)");
+            }
+        }
+
+        /// <summary>
+        /// Odświeża listę wyświetlanych utworów na podstawie aktualnej playlisty
+        /// </summary>
+        private void RefreshDisplayedSongs()
+        {
+            displayedSongs.Clear();
+
+            if (currentPlaylist != null)
+            {
+                foreach (var song in currentPlaylist.Songs)
+                {
+                    displayedSongs.Add(song);
+                }
             }
 
             UpdateSongsCount();
         }
 
         /// <summary>
-        /// Automatyczne zapisywanie przy zamykaniu aplikacji
+        /// Wczytuje playlisty z pliku
         /// </summary>
-        private void MainWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        private void LoadPlaylistsFromFile()
         {
-            songManager.SaveSongs(allSongs);
+            var loadedPlaylists = songManager.LoadPlaylists();
+
+            allPlaylists.Clear();
+            foreach (var playlist in loadedPlaylists)
+            {
+                allPlaylists.Add(playlist);
+            }
+
+            Console.WriteLine($"Wczytano {allPlaylists.Count} playlist");
         }
 
         /// <summary>
-        /// Dodaje piosenki do listy
+        /// Zapisuje playlisty przy zamykaniu aplikacji
+        /// </summary>
+        private void MainWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            songManager.SavePlaylists(allPlaylists);
+        }
+
+        /// <summary>
+        /// Dodaje utwory do aktualnie wybranej playlisty
         /// </summary>
         private void AddSongsButton_Click(object sender, RoutedEventArgs e)
         {
+            // Sprawdź czy mamy wybraną playlistę
+            if (currentPlaylist == null)
+            {
+                MessageBox.Show("Brak wybranej playlisty!", "Błąd",
+                              MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
             OpenFileDialog dialog = new OpenFileDialog()
             {
                 Title = "Wybierz pliki MP3",
@@ -100,18 +205,27 @@ namespace MusicPlayer
 
             if (dialog.ShowDialog() != true) return;
 
-
             int addedCount = 0;
+            int duplicatesCount = 0;
             int errorCount = 0;
 
             foreach (string filePath in dialog.FileNames)
             {
                 try
                 {
-                    if (!songController.SongAlreadyExists(allSongs, filePath))
+                    // Sprawdź duplikaty w aktualnej playliście
+                    if (currentPlaylist.ContainsSong(filePath))
                     {
-                        Song newSong = songController.CreateSongFromFile(filePath);
-                        allSongs.Add(newSong);
+                        duplicatesCount++;
+                        continue;
+                    }
+
+                    // Utwórz obiekt Song z pliku
+                    Song newSong = songController.CreateSongFromFile(filePath);
+
+                    // Dodaj do aktualnej playlisty
+                    if (currentPlaylist.AddSong(newSong))
+                    {
                         addedCount++;
                     }
                 }
@@ -119,21 +233,89 @@ namespace MusicPlayer
                 {
                     errorCount++;
                     string fileName = songController.GetFileNameOnly(filePath);
-                    MessageBox.Show($"Błąd podczas dodawania pliku {fileName}: {ex.Message}",
-                                "Błąd", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    Console.WriteLine($"Błąd podczas dodawania pliku {fileName}: {ex.Message}");
                 }
             }
+
+            // Aktualizuj liczbę utworów w aktualnej playliście
             UpdateSongsCount();
-            string message = songController.CreateResultMessage(addedCount, errorCount);
+            // Odśwież widok
+            RefreshDisplayedSongs();
+
+            // Pokaż rezultat
+            ShowAddSongsResult(addedCount, duplicatesCount, errorCount);
+        }
+
+        /// <summary>
+        /// Aktualizuje licznik utworów
+        /// </summary>
+        private void UpdateSongsCount()
+        {
+            if (currentPlaylist != null)
+            {
+                SongsCountLabel.Text = $"Playlista: {currentPlaylist.Name} - Liczba utworów: {currentPlaylist.SongCount}";
+            }
+            else
+            {
+                SongsCountLabel.Text = "Brak wybranej playlisty - Liczba utworów: 0";
+            }
+        }
+
+        // ====== METODY POMOCNICZE - GOTOWE NA ROZBUDOWĘ ======
+
+        /// <summary>
+        /// Znajduje playlistę po nazwie - przydatne przy rozbudowie
+        /// </summary>
+        /// <param name="name">Nazwa playlisty</param>
+        /// <returns>Znaleziona playlista lub null</returns>
+        private Playlist FindPlaylistByName(string name)
+        {
+            return allPlaylists.FirstOrDefault(p => p.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+        }
+
+        /// <summary>
+        /// Sprawdza czy nazwa playlisty już istnieje - przydatne przy dodawaniu nowych
+        /// </summary>
+        /// <param name="name">Nazwa do sprawdzenia</param>
+        /// <returns>True jeśli nazwa już istnieje</returns>
+        private bool PlaylistNameExists(string name)
+        {
+            return songManager.PlaylistNameExists(allPlaylists, name);
+        }
+
+        /// <summary>
+        /// Pokazuje rezultat dodawania utworów - metoda pomocnicza
+        /// </summary>
+        private void ShowAddSongsResult(int addedCount, int duplicatesCount, int errorCount)
+        {
+            string message = $"Dodano {addedCount} nowych utworów do playlisty '{currentPlaylist.Name}'.";
+
+            if (duplicatesCount > 0)
+            {
+                message += $"\nPominięto {duplicatesCount} duplikatów.";
+            }
+
+            if (errorCount > 0)
+            {
+                message += $"\nBłędów: {errorCount}";
+            }
+
             MessageBox.Show(message, "Rezultat", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
-        private void UpdateSongsCount()
-        {
-            SongsCountLabel.Text = $"Liczba utworów: {allSongs.Count}";
-        }
+        // ====== METODY DO PRZYSZŁEJ ROZBUDOWY ======
+
+        // TODO: Metody które dodamy w przyszłości:
+
+        // private void CreateNewPlaylist(string name) { }
+        // private void DeletePlaylist(Playlist playlist) { }
+        // private void RenamePlaylist(Playlist playlist, string newName) { }
+        // private void DuplicatePlaylist(Playlist playlist) { }
+        // private void ExportPlaylist(Playlist playlist) { }
+        // private void ImportPlaylist() { }
     }
 
+    // Klasy Song i SongData pozostają bez zmian
     ///<summary>
     /// Klasa bazowa dla danych piosenki
     ///</summary>
