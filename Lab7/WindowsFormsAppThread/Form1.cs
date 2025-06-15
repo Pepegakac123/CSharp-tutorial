@@ -35,7 +35,7 @@ namespace WindowsFormsAppThread
 
                         int bazaNumerow = iloscWatkowUruchomiona;
                         int numerWatku = bazaNumerow + i + 1;
-                        // Przekazujemy: numerWatku (do identyfikacji) i indeks flagi
+                        // Daje tutaj numerWatku (do identyfikacji) i indeks flagi
                         Thread nowyWatek = new Thread(() => CialoFunkcjiWatku(numerWatku, flagiZatrzymania.Count - 1));
                         nowyWatek.Start();
 
@@ -92,8 +92,7 @@ namespace WindowsFormsAppThread
                 }
 
                 Thread.Sleep(1);
-                if (indeksFlagI < flagiZatrzymania.Count && flagiZatrzymania[indeksFlagI])
-                    break;
+               
             }
 
             lock (lockForWatki)
