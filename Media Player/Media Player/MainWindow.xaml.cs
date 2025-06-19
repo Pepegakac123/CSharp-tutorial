@@ -17,6 +17,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.IO;
 using TagLib;
+using Newtonsoft.Json.Bson;
 
 namespace MusicPlayer
 {
@@ -77,10 +78,10 @@ namespace MusicPlayer
             AddSongsButton.Click += AddSongsButton_Click;
             PlaylistsList.SelectionChanged += PlaylistsList_SelectionChanged;
             this.Closing += MainWindow_Closing;
-
-            // TODO: W przyszłości dodamy tutaj:
-            // CreatePlaylistButton.Click += CreatePlaylistButton_Click;
-            // DeletePlaylistButton.Click += DeletePlaylistButton_Click;
+            CreatePlaylistButton.Click += CreatePlaylistButton_Click;
+            DeletePlaylistButton.Click += DeletePlaylistButton_Click;
+            CancelPlaylistButton.Click += CancelPlaylistButton_Click;
+            OkPlaylistButton.Click += OkPlaylistButton_Click;
         }
 
         /// <summary>
@@ -95,7 +96,6 @@ namespace MusicPlayer
             if (defaultPlaylist == null)
             {
                 defaultPlaylist = new Playlist("Wszystkie utwory");
-                defaultPlaylist.IsSystemPlaylist = true;
                 allPlaylists.Add(defaultPlaylist);
                 Console.WriteLine("Utworzono domyślną playlistę 'Wszystkie utwory'");
             }
@@ -105,6 +105,7 @@ namespace MusicPlayer
             }
 
             // Ustaw jako aktualną
+            defaultPlaylist.IsSystemPlaylist = true;
             currentPlaylist = defaultPlaylist;
         }
 
@@ -188,6 +189,10 @@ namespace MusicPlayer
         /// </summary>
         private void AddSongsButton_Click(object sender, RoutedEventArgs e)
         {
+            //Globalna Plylists
+            var systemPlaylist = FindPlaylistByName("Wszystkie utwory");
+
+
             // Sprawdź czy mamy wybraną playlistę
             if (currentPlaylist == null)
             {
@@ -226,6 +231,10 @@ namespace MusicPlayer
                     // Dodaj do aktualnej playlisty
                     if (currentPlaylist.AddSong(newSong))
                     {
+                        if (!currentPlaylist.IsSystemPlaylist)
+                        {
+                            systemPlaylist.AddSong(newSong); // Dodaj do systemowej playlisty "Wszystkie utwory"
+                        }
                         addedCount++;
                     }
                 }
@@ -301,6 +310,112 @@ namespace MusicPlayer
             }
 
             MessageBox.Show(message, "Rezultat", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        /// <summary>
+        /// Dodaje nową playlistę
+        /// </summary>
+        private void CreatePlaylistButton_Click(object sender, RoutedEventArgs e)
+        {
+            CreatePlaylistDialog.Visibility = Visibility.Visible;
+
+        }
+
+        private void CancelPlaylistButton_Click(object sender, RoutedEventArgs e)
+        {
+            CreatePlaylistDialog.Visibility = Visibility.Collapsed;
+            ClearForm();
+        }
+
+        private void OkPlaylistButton_Click(object sender, RoutedEventArgs e)
+        {
+            string value = PlaylistNameTextBox.Text;
+            bool textNotValid = false; 
+            TextBlock errorTextBlock = ErrorMessageTextBlock;
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                WriteErrorMsg("Wartość nie może być pusta", errorTextBlock);
+                textNotValid = true;
+            }
+            string processedValue = value.Trim();
+
+            if (processedValue.Length <= 0 || processedValue.Length > 20)
+            {
+                WriteErrorMsg("Wartość nie może być pusta lub nie może przekraczać 20 znaków", errorTextBlock);
+                textNotValid = true;
+            }
+            if (PlaylistNameExists(processedValue))
+            {
+                WriteErrorMsg($"Playlista o nazwie {processedValue} już istnieje",errorTextBlock);
+                textNotValid = true;
+            }
+            if (textNotValid)
+            {
+                return;
+            }
+            else
+            {
+                CreateNewPlaylist(processedValue);
+            }
+
+        }
+
+        private void CreateNewPlaylist(string name)
+        {
+            Playlist newPlaylist = new Playlist(name);
+            allPlaylists.Add(newPlaylist);
+            PlaylistsList.SelectedItem = newPlaylist;
+            currentPlaylist = newPlaylist;
+            RefreshDisplayedSongs();
+            CreatePlaylistDialog.Visibility = Visibility.Collapsed;
+            ClearForm();
+            MessageBox.Show($"Pomyślne utworzono playliste {newPlaylist.Name} ");
+        }
+            
+
+        private void WriteErrorMsg(string msg, TextBlock textBlock)
+        {
+            textBlock.Visibility = Visibility.Visible;
+            textBlock.Text = msg;
+        }
+
+        private void ClearForm()
+        {
+            PlaylistNameTextBox.Text = "";
+            ErrorMessageTextBlock.Visibility = Visibility.Collapsed;
+            ErrorMessageTextBlock.Text = "";
+        }
+
+        private void DeletePlaylistButton_Click(object sender, RoutedEventArgs e)
+        {
+            Console.WriteLine("DeletePlaylistButton_Click wywołane");
+            DeletePlaylist(currentPlaylist);
+        }
+        private void DeletePlaylist(Playlist playlist)
+        {
+            if (playlist == null) return;
+
+            Console.WriteLine($"{playlist.IsSystemPlaylist}");
+            if (playlist.IsSystemPlaylist)
+            {
+                MessageBox.Show("Nie można usunąć systemowej playlisty!", "Błąd",
+                                MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            bool wasCurrentPlaylist = (currentPlaylist == playlist); 
+
+            allPlaylists.Remove(playlist);
+
+            if (wasCurrentPlaylist)
+            {
+                var defaultPlaylist = FindPlaylistByName("Wszystkie utwory");
+                currentPlaylist = defaultPlaylist;
+                PlaylistsList.SelectedItem = defaultPlaylist;
+                RefreshDisplayedSongs();
+            }
+
+            MessageBox.Show($"Usunięto playlistę: {playlist.Name}");
         }
 
         // ====== METODY DO PRZYSZŁEJ ROZBUDOWY ======

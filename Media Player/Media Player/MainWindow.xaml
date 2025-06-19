@@ -167,7 +167,7 @@
                         <Button Grid.Column="1" x:Name="AddSongsButton" 
                               Content="Dodaj pliki" 
                               Style="{StaticResource PlaylistButtonStyle}" 
-                              Margin="5,5,15,5" Click="AddSongsButton_Click"/>
+                              Margin="5,5,15,5"/>
                     </Grid>
 
                     <ListView x:Name="SongsList" Grid.Row="1" 
@@ -209,7 +209,7 @@
                               Content="Nowa" 
                               Style="{StaticResource PlaylistButtonStyle}" 
                               Background="#2E7D32"
-                              Margin="5,5,15,5"/>
+                              Margin="5,5,15,5" Click="CreatePlaylistButton_Click"/>
                     </Grid>
 
                     <ListBox x:Name="PlaylistsList" Grid.Row="1" 
@@ -219,13 +219,68 @@
                         <Button x:Name="LoadPlaylistButton" Content="Wczytaj playlistę" 
                               Style="{StaticResource PlaylistButtonStyle}" 
                               HorizontalAlignment="Stretch" Margin="0,2"/>
-                        <Button x:Name="SavePlaylistButton" Content="Zapisz playlistę" 
-                              Style="{StaticResource PlaylistButtonStyle}" 
-                              HorizontalAlignment="Stretch" Margin="0,2"/>
                         <Button x:Name="DeletePlaylistButton" Content="Usuń playlistę" 
                               Style="{StaticResource PlaylistButtonStyle}" 
                               Background="#F44336"
                               HorizontalAlignment="Stretch" Margin="0,2"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </Grid>
+        <!-- Dialog tworzenia nowej playlisty -->
+        <Grid x:Name="CreatePlaylistDialog" Visibility="Collapsed" Background="#80000000">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            <Border Grid.Row="0" Background="White" CornerRadius="10" 
+            MaxWidth="400" MaxHeight="350" 
+            HorizontalAlignment="Center" VerticalAlignment="Center"
+            BorderBrush="#DDD" BorderThickness="1">
+
+                <Grid Margin="20">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <!-- Tytuł -->
+                        <RowDefinition Height="Auto"/>
+                        <!-- Label -->
+                        <RowDefinition Height="Auto"/>
+                        <!-- TextBox -->
+                        <RowDefinition Height="Auto"/>
+                        <!-- Komunikat błędu -->
+                        <RowDefinition Height="*"/>
+                        <!-- Spacer -->
+                        <RowDefinition Height="Auto"/>
+                        <!-- Przyciski -->
+                    </Grid.RowDefinitions>
+
+                    <!-- Tytuł dialogu -->
+                    <TextBlock Grid.Row="0" Text="Utwórz nową playlistę" 
+                       FontSize="16" FontWeight="Bold" 
+                       HorizontalAlignment="Center" Margin="0,0,0,20"/>
+
+                    <!-- Label dla pola tekstowego -->
+                    <TextBlock Grid.Row="1" Text="Nazwa playlisty:" 
+                       Margin="0,0,0,5"/>
+
+                    <!-- Pole do wpisania nazwy -->
+                    <TextBox x:Name="PlaylistNameTextBox" Grid.Row="2" 
+                     FontSize="14" Padding="8" 
+                     Margin="0,0,0,10"/>
+
+                    <!-- Komunikat o błędzie (początkowo ukryty) -->
+                    <TextBlock x:Name="ErrorMessageTextBlock" Grid.Row="3" 
+                       Foreground="Red" FontSize="12" 
+                       Visibility="Collapsed" Margin="0,0,0,10"/>
+
+                    <!-- Przyciski -->
+                    <StackPanel Grid.Row="5" Orientation="Horizontal" 
+                        HorizontalAlignment="Right">
+                        <Button x:Name="CancelPlaylistButton" Content="Anuluj" 
+                        Margin="0,0,10,0" Padding="15,8" 
+                        Background="#CCC" Foreground="Black"/>
+                        <Button x:Name="OkPlaylistButton" Content="Utwórz" 
+                        Padding="15,8" 
+                        Style="{StaticResource PlaylistButtonStyle}"/>
                     </StackPanel>
                 </Grid>
             </Border>
