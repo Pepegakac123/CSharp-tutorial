@@ -1,10 +1,11 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
-using Newtonsoft.Json;
 using System.Windows;
+using System.Windows.Controls;
 
 namespace MusicPlayer
 {
@@ -220,6 +221,83 @@ namespace MusicPlayer
         public bool PlaylistNameExists(ObservableCollection<Playlist> playlists, string name)
         {
             return playlists.Any(p => p.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+        }
+
+
+        /// <summary>
+        /// Waliduje nazwę playlisty pod kątem poprawności i unikalności
+        /// </summary>
+        /// <param name="name">Nazwa playlisty do zwalidowania</param>
+        /// <param name="allPlaylists">Kolekcja wszystkich istniejących playlist</param>
+        /// <returns>Krotka zawierająca informację o poprawności nazwy oraz komunikat błędu w przypadku niepowodzenia</returns>
+        public (bool isValid, string errorMessage) ValidatePlaylistName(string name, ObservableCollection<Playlist> allPlaylists)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                return (false, "Wartość nie może być pusta");
+            }
+            if (name.Length <= 0 || name.Length > 20)
+            {
+                return (false, "Wartość nie może być pusta lub nie może przekraczać 20 znaków");
+            }
+            if (PlaylistNameExists(allPlaylists, name))
+            {
+                return (false, $"Playlista o nazwie '{name}' już istnieje");
+            }
+            return (true, string.Empty);
+        }
+
+
+        /// <summary>
+        /// Tworzy nową playlistę i dodaje ją do kolekcji
+        /// </summary>
+        /// <param name="name">Nazwa nowej playlisty</param>
+        /// <param name="allPlaylists">Kolekcja wszystkich playlist</param>
+        /// <returns>Utworzona playlista</returns>
+        public Playlist CreateNewPlaylist(string name, ObservableCollection<Playlist> allPlaylists)
+        {
+            Playlist newPlaylist = new Playlist(name);
+            allPlaylists.Add(newPlaylist);
+
+            Console.WriteLine($"Utworzono nową playlistę: {name}");
+            return newPlaylist;
+        }
+
+        /// <summary>
+        /// Bezpiecznie usuwa playlistę z odpowiednimi sprawdzeniami
+        /// </summary>
+        /// <param name="playlist">Playlista do usunięcia</param>
+        /// <param name="allPlaylists">Kolekcja wszystkich playlist</param>
+        /// <returns>Informacje o rezultacie operacji</returns>
+        public (bool wasDeleted, bool wasCurrentPlaylist, string message) DeletePlaylistSafely(
+            Playlist playlist,
+            Playlist currentPlaylist,
+            ObservableCollection<Playlist> allPlaylists)
+        {
+            if (playlist == null)
+            {
+                return (false, false, "Nie wybrano playlisty do usunięcia");
+            }
+
+            if (playlist.IsSystemPlaylist)
+            {
+                return (false, false, "Nie można usunąć systemowej playlisty!");
+            }
+
+
+            bool wasCurrentPlaylist = (currentPlaylist == playlist);
+
+            bool removed = allPlaylists.Remove(playlist);
+
+            if (removed)
+            {
+                Console.WriteLine($"Usunięto playlistę: {playlist.Name}");
+                return (true, wasCurrentPlaylist, $"Usunięto playlistę: {playlist.Name}");
+            }
+            else
+            {
+                return (false, false, "Nie udało się usunąć playlisty");
+            }
         }
     }
 }

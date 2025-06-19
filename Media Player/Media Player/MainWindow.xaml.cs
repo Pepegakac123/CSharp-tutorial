@@ -32,8 +32,8 @@ namespace MusicPlayer
         private ObservableCollection<Song> displayedSongs;    // Utwory wyświetlane w SongsList
 
         // Pomocnicze klasy
-        private PlaylistManager songManager;
-        private SongManager songController;
+        private PlaylistManager playlistManager;
+        private SongManager songManager;
 
         public MainWindow()
         {
@@ -47,8 +47,8 @@ namespace MusicPlayer
         private void InitializePlayer()
         {
             // Inicjalizacja pomocniczych klas
-            songManager = new PlaylistManager();
-            songController = new SongManager();
+            playlistManager = new PlaylistManager();
+            songManager = new SongManager();
 
             // Inicjalizacja kolekcji - struktura dla wielu playlist
             allPlaylists = new ObservableCollection<Playlist>();
@@ -165,7 +165,7 @@ namespace MusicPlayer
         /// </summary>
         private void LoadPlaylistsFromFile()
         {
-            var loadedPlaylists = songManager.LoadPlaylists();
+            var loadedPlaylists = playlistManager.LoadPlaylists();
 
             allPlaylists.Clear();
             foreach (var playlist in loadedPlaylists)
@@ -181,7 +181,7 @@ namespace MusicPlayer
         /// </summary>
         private void MainWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
-            songManager.SavePlaylists(allPlaylists);
+            playlistManager.SavePlaylists(allPlaylists);
         }
 
         /// <summary>
@@ -226,7 +226,7 @@ namespace MusicPlayer
                     }
 
                     // Utwórz obiekt Song z pliku
-                    Song newSong = songController.CreateSongFromFile(filePath);
+                    Song newSong = songManager.CreateSongFromFile(filePath);
 
                     // Dodaj do aktualnej playlisty
                     if (currentPlaylist.AddSong(newSong))
@@ -241,7 +241,7 @@ namespace MusicPlayer
                 catch (Exception ex)
                 {
                     errorCount++;
-                    string fileName = songController.GetFileNameOnly(filePath);
+                    string fileName = songManager.GetFileNameOnly(filePath);
                     Console.WriteLine($"Błąd podczas dodawania pliku {fileName}: {ex.Message}");
                 }
             }
@@ -289,7 +289,7 @@ namespace MusicPlayer
         /// <returns>True jeśli nazwa już istnieje</returns>
         private bool PlaylistNameExists(string name)
         {
-            return songManager.PlaylistNameExists(allPlaylists, name);
+            return playlistManager.PlaylistNameExists(allPlaylists, name);
         }
 
         /// <summary>
@@ -321,92 +321,66 @@ namespace MusicPlayer
 
         }
 
+        /// <summary>
+        /// Obsługuje anulowanie tworzenia nowej playlisty - ukrywa dialog i czyści formularz
+        /// </summary>
         private void CancelPlaylistButton_Click(object sender, RoutedEventArgs e)
         {
             CreatePlaylistDialog.Visibility = Visibility.Collapsed;
             ClearForm();
         }
 
+        /// <summary>
+        /// Obsługuje potwierdzenie tworzenia nowej playlisty - waliduje nazwę i tworzy playlistę
+        /// </summary>
         private void OkPlaylistButton_Click(object sender, RoutedEventArgs e)
         {
-            string value = PlaylistNameTextBox.Text;
-            bool textNotValid = false; 
-            TextBlock errorTextBlock = ErrorMessageTextBlock;
-            if (string.IsNullOrWhiteSpace(value))
+            string value = PlaylistNameTextBox.Text?.Trim();
+            var (isValid, errorMessage) = playlistManager.ValidatePlaylistName(value, allPlaylists);
+            if (!isValid)
             {
-                WriteErrorMsg("Wartość nie może być pusta", errorTextBlock);
-                textNotValid = true;
-            }
-            string processedValue = value.Trim();
-
-            if (processedValue.Length <= 0 || processedValue.Length > 20)
-            {
-                WriteErrorMsg("Wartość nie może być pusta lub nie może przekraczać 20 znaków", errorTextBlock);
-                textNotValid = true;
-            }
-            if (PlaylistNameExists(processedValue))
-            {
-                WriteErrorMsg($"Playlista o nazwie {processedValue} już istnieje",errorTextBlock);
-                textNotValid = true;
-            }
-            if (textNotValid)
-            {
+                WriteErrorMsg(errorMessage, ErrorMessageTextBlock);
                 return;
             }
-            else
-            {
-                CreateNewPlaylist(processedValue);
-            }
-
+            CreateNewPlaylist(value);
         }
 
+        /// <summary>
+        /// Tworzy nową playlistę i aktualizuje interfejs użytkownika
+        /// </summary>
+        /// <param name="name">Nazwa nowej playlisty</param>
         private void CreateNewPlaylist(string name)
         {
-            Playlist newPlaylist = new Playlist(name);
-            allPlaylists.Add(newPlaylist);
+            Playlist newPlaylist = playlistManager.CreateNewPlaylist(name, allPlaylists);
             PlaylistsList.SelectedItem = newPlaylist;
             currentPlaylist = newPlaylist;
             RefreshDisplayedSongs();
             CreatePlaylistDialog.Visibility = Visibility.Collapsed;
             ClearForm();
-            MessageBox.Show($"Pomyślne utworzono playliste {newPlaylist.Name} ");
-        }
-            
-
-        private void WriteErrorMsg(string msg, TextBlock textBlock)
-        {
-            textBlock.Visibility = Visibility.Visible;
-            textBlock.Text = msg;
+            MessageBox.Show($"Pomyślnie utworzono playlistę {newPlaylist.Name}");
         }
 
-        private void ClearForm()
-        {
-            PlaylistNameTextBox.Text = "";
-            ErrorMessageTextBlock.Visibility = Visibility.Collapsed;
-            ErrorMessageTextBlock.Text = "";
-        }
-
+        /// <summary>
+        /// Obsługuje kliknięcie przycisku usuwania playlisty - usuwa aktualnie wybraną playlistę
+        /// </summary>
         private void DeletePlaylistButton_Click(object sender, RoutedEventArgs e)
         {
-            Console.WriteLine("DeletePlaylistButton_Click wywołane");
             DeletePlaylist(currentPlaylist);
         }
+
+        /// <summary>
+        /// Usuwa wskazaną playlistę z odpowiednimi sprawdzeniami i aktualizuje interfejs
+        /// </summary>
+        /// <param name="playlist">Playlista do usunięcia</param>
         private void DeletePlaylist(Playlist playlist)
         {
-            if (playlist == null) return;
-
-            Console.WriteLine($"{playlist.IsSystemPlaylist}");
-            if (playlist.IsSystemPlaylist)
+            var (wasDeleted, wasCurrentPlaylist, message) = playlistManager.DeletePlaylistSafely(
+                playlist, currentPlaylist, allPlaylists);
+            if (!wasDeleted)
             {
-                MessageBox.Show("Nie można usunąć systemowej playlisty!", "Błąd",
-                                MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(message, "Błąd", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
-
-            bool wasCurrentPlaylist = (currentPlaylist == playlist); 
-
-            allPlaylists.Remove(playlist);
-
             if (wasCurrentPlaylist)
             {
                 var defaultPlaylist = FindPlaylistByName("Wszystkie utwory");
@@ -414,23 +388,31 @@ namespace MusicPlayer
                 PlaylistsList.SelectedItem = defaultPlaylist;
                 RefreshDisplayedSongs();
             }
-
-            MessageBox.Show($"Usunięto playlistę: {playlist.Name}");
+            MessageBox.Show(message, "Sukces", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
-        // ====== METODY DO PRZYSZŁEJ ROZBUDOWY ======
+        /// <summary>
+        /// Wyświetla komunikat błędu w podanym elemencie TextBlock
+        /// </summary>
+        /// <param name="msg">Treść komunikatu błędu</param>
+        /// <param name="textBlock">Element TextBlock do wyświetlenia komunikatu</param>
+        private void WriteErrorMsg(string msg, TextBlock textBlock)
+        {
+            textBlock.Visibility = Visibility.Visible;
+            textBlock.Text = msg;
+        }
 
-        // TODO: Metody które dodamy w przyszłości:
-
-        // private void CreateNewPlaylist(string name) { }
-        // private void DeletePlaylist(Playlist playlist) { }
-        // private void RenamePlaylist(Playlist playlist, string newName) { }
-        // private void DuplicatePlaylist(Playlist playlist) { }
-        // private void ExportPlaylist(Playlist playlist) { }
-        // private void ImportPlaylist() { }
+        /// <summary>
+        /// Czyści formularz tworzenia playlisty - usuwa tekst i ukrywa komunikaty błędów
+        /// </summary>
+        private void ClearForm()
+        {
+            PlaylistNameTextBox.Text = "";
+            ErrorMessageTextBlock.Visibility = Visibility.Collapsed;
+            ErrorMessageTextBlock.Text = "";
+        }
     }
 
-    // Klasy Song i SongData pozostają bez zmian
     ///<summary>
     /// Klasa bazowa dla danych piosenki
     ///</summary>
