@@ -1,0 +1,8 @@
+﻿
+3.0 - Uruchomienie jednego dodatkowego wątku generującego plik z liczbami pierwszymi.
+	//jeśli uruchomicie jeden wątek i będzie się pojawiał plik z liczbami pierwszymi
+4.0 - Możliwość dynamicznego zwiększania liczby wątków wyszukujących liczby pierwsze.
+	//jeśli będziecie umieli zwiększać wątki szukające liczb pierwszych
+5.0 - Możliwość dynamicznego zwiększania i zmniejszania liczby wątków wyszukujących liczb pierwszych.
+	//jeśli będziecie umieli zwiększać i zmniejszać liczbę wątków szukających liczb pierwszych
+
