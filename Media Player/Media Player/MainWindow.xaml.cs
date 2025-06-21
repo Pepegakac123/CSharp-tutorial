@@ -27,10 +27,11 @@ namespace MusicPlayer
     public partial class MainWindow : Window
     {
         // GŁÓWNE ZMIENNE - struktura gotowa na rozbudowę
-        private ObservableCollection<Playlist> allPlaylists;  // Wszystkie playlisty (gotowe na więcej)
+        private ObservableCollection<Playlist> allPlaylists;  // Wszystkie playlisty 
         private Playlist currentPlaylist;                     // Aktualnie wybrana playlista
         private ObservableCollection<Song> displayedSongs;    // Utwory wyświetlane w SongsList
-
+        private Song currentSong;                        // Aktualnie odtwarzany utwór (jeśli istnieje)
+        private MediaPlayer mediaPlayer;
         // Pomocnicze klasy
         private PlaylistManager playlistManager;
         private SongManager songManager;
@@ -55,6 +56,9 @@ namespace MusicPlayer
             displayedSongs = new ObservableCollection<Song>();
             SongsList.ItemsSource = displayedSongs;
 
+            //Inicjalizacja MediaPlayer
+            mediaPlayer = new MediaPlayer();
+
             // Event handlery - podstawowe (gotowe na dodanie więcej)
             SetupEventHandlers();
 
@@ -78,6 +82,17 @@ namespace MusicPlayer
             AddSongsButton.Click += AddSongsButton_Click;
             PlaylistsList.SelectionChanged += PlaylistsList_SelectionChanged;
             this.Closing += MainWindow_Closing;
+
+            SongsList.SelectionChanged += SongsList_SelectionChanged;
+            SongsList.MouseDoubleClick += SongsList_MouseDoubleClick;
+
+
+            mediaPlayer.MediaOpened += MediaPlayer_MediaOpened;
+            PlayPauseButton.Click += PlayPauseButton_Click;
+            PreviousButton.Click += PreviousButton_Click;
+            NextButton.Click += NextButton_Click;
+            VolumeSlider.ValueChanged += VolumeSlider_ValueChanged;
+
             CreatePlaylistButton.Click += CreatePlaylistButton_Click;
             DeletePlaylistButton.Click += DeletePlaylistButton_Click;
             CancelPlaylistButton.Click += CancelPlaylistButton_Click;
@@ -411,6 +426,102 @@ namespace MusicPlayer
             ErrorMessageTextBlock.Visibility = Visibility.Collapsed;
             ErrorMessageTextBlock.Text = "";
         }
+
+        private void SongsList_MouseDoubleClick(object sender, RoutedEventArgs e)
+        {
+            Song selectedSong = SongsList.SelectedItem as Song;
+            if (selectedSong == null) return;
+
+            if (currentSong == selectedSong && selectedSong.IsActive)
+            {
+                selectedSong.Stop(mediaPlayer);
+                selectedSong.IsActive = false;
+            }
+            else
+            {
+                if (currentSong != null && currentSong.IsActive)
+                {
+                    currentSong.Stop(mediaPlayer);
+                    currentSong.IsActive = false;
+                    PlayPauseButton.Content = "▶";
+                }
+                selectedSong.Play(mediaPlayer);
+                selectedSong.IsActive = true;
+                currentSong = selectedSong;
+                PlayPauseButton.Content = "⏸";
+                
+            }
+
+            RefreshSongInfo(selectedSong);
+        }
+
+        private void MediaPlayer_MediaOpened(object sender, EventArgs e)
+        {
+              if (mediaPlayer.NaturalDuration.HasTimeSpan)
+            {
+                var duration = mediaPlayer.NaturalDuration.TimeSpan;
+                ProgressSlider.Maximum = duration.TotalSeconds;
+                ProgressSlider.Minimum = 0;
+                ProgressSlider.Value = 0;
+
+                TotalTime.Text = duration.ToString(@"mm\:ss");
+            }
+        }
+
+
+        private void SongsList_SelectionChanged(object sender, RoutedEventArgs e)
+        {
+            
+        }
+        private void PlayPauseButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (currentSong == null)
+            {
+                return;
+            }
+            if(currentSong.IsActive)
+            {
+                currentSong.Stop(mediaPlayer);
+                currentSong.IsActive = false;
+                PlayPauseButton.Content = "▶";
+                
+            }
+            else
+            {
+                currentSong.Play(mediaPlayer);
+                currentSong.IsActive = true;
+                PlayPauseButton.Content = "⏸";
+
+            }
+        }
+        private void NextButton_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+        private void PreviousButton_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+        private void VolumeSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            if (mediaPlayer != null)
+            {
+                mediaPlayer.Volume = VolumeSlider.Value / 100.0;
+            }
+        }
+        private void RefreshSongInfo(Song song)
+        {
+            if (song != null)
+            {
+                
+                CurrentSongTitle.Text = song.Name;
+                CurrentArtist.Text = string.IsNullOrWhiteSpace(song.Author) ? "Autor nieznany" : song.Author;
+            }
+            else
+            {
+                CurrentSongTitle.Text = "Brak aktualnie odtwarzanego utworu.";
+            }
+        }
     }
 
     ///<summary>
@@ -431,8 +542,8 @@ namespace MusicPlayer
             IsActive = false;
         }
 
-        public abstract void Play();
-        public abstract void Stop();
+        public abstract void Play(MediaPlayer player);
+        public abstract void Stop(MediaPlayer player);
     }
 
     public class Song : SongData
@@ -452,17 +563,22 @@ namespace MusicPlayer
             Path = path;
         }
 
-        public override void Play()
+        public override void Play(MediaPlayer player)
         {
             IsActive = true;
+            player.Open(new Uri(this.Path));
+            player.Play();
             Console.WriteLine($"Odtwarzam: {Author} - {Name}");
         }
 
-        public override void Stop()
+        public override void Stop(MediaPlayer player)
         {
             IsActive = false;
+            player.Pause();
             Console.WriteLine($"Zatrzymuję: {Author} - {Name}");
         }
+
+
 
         public override string ToString()
         {
