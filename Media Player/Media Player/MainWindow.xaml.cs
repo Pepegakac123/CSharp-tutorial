@@ -90,7 +90,6 @@ namespace MusicPlayer
             PlaylistsList.SelectionChanged += PlaylistsList_SelectionChanged;
             this.Closing += MainWindow_Closing;
 
-            SongsList.SelectionChanged += SongsList_SelectionChanged;
             SongsList.MouseDoubleClick += SongsList_MouseDoubleClick;
 
 
@@ -156,7 +155,7 @@ namespace MusicPlayer
         }
 
         /// <summary>
-        /// GOTOWE NA ROZBUDOWĘ: Obsługuje zmianę wybranej playlisty
+        /// Obsługuje zmianę wybranej playlisty
         /// </summary>
         private void PlaylistsList_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
@@ -297,7 +296,7 @@ namespace MusicPlayer
             }
         }
 
-        // ====== METODY POMOCNICZE - GOTOWE NA ROZBUDOWĘ ======
+  
 
         /// <summary>
         /// Znajduje playlistę po nazwie - przydatne przy rozbudowie
@@ -439,6 +438,11 @@ namespace MusicPlayer
             ErrorMessageTextBlock.Text = "";
         }
 
+        /// <summary>
+        /// Obsługuje podwójne kliknięcie na utworze w liście - odtwarza/pauzuje wybrany utwór
+        /// Implementuje logikę przełączania: podwójne kliknięcie na tę samą piosenkę = pause/play,
+        /// podwójne kliknięcie na inną piosenkę = zmiana utworu
+        /// </summary>
         private void SongsList_MouseDoubleClick(object sender, RoutedEventArgs e)
         {
             Song selectedSong = SongsList.SelectedItem as Song;
@@ -471,6 +475,10 @@ namespace MusicPlayer
             RefreshSongInfo(selectedSong);
         }
 
+        /// <summary>
+        /// Event handler wywoływany gdy MediaPlayer pomyślnie załaduje plik audio
+        /// Konfiguruje slider postępu z rzeczywistą długością utworu i resetuje pozycję na początek
+        /// </summary>
         private void MediaPlayer_MediaOpened(object sender, EventArgs e)
         {
               if (mediaPlayer.NaturalDuration.HasTimeSpan)
@@ -483,7 +491,10 @@ namespace MusicPlayer
                 TotalTime.Text = duration.ToString(@"mm\:ss");
             }
         }
-
+        /// <summary>
+        /// Timer wywoływany co 500ms podczas odtwarzania - aktualizuje slider postępu i czas bieżący
+        /// Działa tylko gdy muzyka gra i użytkownik nie manipuluje sliderem
+        /// </summary>
         private void PositionTimer_Tick(object sender, EventArgs e)
         {
             if (mediaPlayer != null && currentSong != null && currentSong.IsActive && !isUserSeekingPosition)
@@ -492,6 +503,10 @@ namespace MusicPlayer
                 CurrentTime.Text = mediaPlayer.Position.ToString(@"mm\:ss");
             }
         }
+        /// <summary>
+        /// Obsługuje zmiany wartości slidera postępu przez użytkownika (kliknięcie/przeciąganie)
+        /// Przewija MediaPlayer na nową pozycję i tymczasowo blokuje timer aby uniknąć konfliktów
+        /// </summary>
         private void ProgressSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
             if (Mouse.LeftButton == MouseButtonState.Pressed && mediaPlayer != null && mediaPlayer.NaturalDuration.HasTimeSpan)
@@ -506,11 +521,10 @@ namespace MusicPlayer
                 });
             }
         }
-
-        private void SongsList_SelectionChanged(object sender, RoutedEventArgs e)
-        {
-            
-        }
+        /// <summary>
+        /// Obsługuje kliknięcie przycisku Play/Pause - przełącza między odtwarzaniem a pauzą aktualnego utworu
+        /// Aktualizuje ikonę przycisku i kontroluje timer postępu
+        /// </summary>
         private void PlayPauseButton_Click(object sender, RoutedEventArgs e)
         {
             if (currentSong == null)
@@ -534,14 +548,26 @@ namespace MusicPlayer
 
             }
         }
+        /// <summary>
+        /// Obsługuje kliknięcie przycisku następny utwór - przechodzi do kolejnego utworu w playliście
+        /// TODO: Implementacja funkcjonalności przechodzenia do następnego utworu
+        /// </summary>
         private void NextButton_Click(object sender, RoutedEventArgs e)
         {
 
         }
+        /// <summary>
+        /// Obsługuje kliknięcie przycisku poprzedni utwór - przechodzi do poprzedniego utworu w playliście
+        /// TODO: Implementacja funkcjonalności przechodzenia do poprzedniego utworu
+        /// </summary>
         private void PreviousButton_Click(object sender, RoutedEventArgs e)
         {
 
         }
+        /// <summary>
+        /// Obsługuje zmiany slidera głośności - aktualizuje głośność MediaPlayera w czasie rzeczywistym
+        /// Konwertuje wartość z zakresu 0-100 na 0.0-1.0 wymagany przez MediaPlayer
+        /// </summary>
         private void VolumeSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
             if (mediaPlayer != null)
@@ -549,6 +575,11 @@ namespace MusicPlayer
                 mediaPlayer.Volume = VolumeSlider.Value / 100.0;
             }
         }
+        /// <summary>
+        /// Aktualizuje sekcję informacji o aktualnym utworze (tytuł, wykonawca)
+        /// Wyświetla dane o podanym utworze lub komunikat o braku aktualnego utworu
+        /// </summary>
+        /// <param name="song">Utwór do wyświetlenia lub null dla braku utworu</param>
         private void RefreshSongInfo(Song song)
         {
             if (song != null)
@@ -564,68 +595,5 @@ namespace MusicPlayer
         }
     }
 
-    ///<summary>
-    /// Klasa bazowa dla danych piosenki
-    ///</summary>
-    public abstract class SongData
-    {
-        public string Name { get; set; }
-        public string Author { get; set; }
-        public TimeSpan Duration { get; set; }
-        public bool IsActive { get; set; }
-
-        protected SongData()
-        {
-            Name = string.Empty;
-            Author = string.Empty;
-            Duration = TimeSpan.Zero;
-            IsActive = false;
-        }
-
-        public abstract void Play(MediaPlayer player);
-        public abstract void Stop(MediaPlayer player);
-    }
-
-    public class Song : SongData
-    {
-        public string Path { get; set; }
-
-        public Song() : base()
-        {
-            Path = string.Empty;
-        }
-
-        public Song(string name, string author, TimeSpan duration, string path) : base()
-        {
-            Name = name;
-            Author = author;
-            Duration = duration;
-            Path = path;
-        }
-
-        public override void Play(MediaPlayer player)
-        {
-            IsActive = true;
-            if (player.Source == null || player.Source.LocalPath != this.Path)
-            {
-                player.Open(new Uri(this.Path));
-            }
-            player.Play();
-            Console.WriteLine($"Odtwarzam: {Author} - {Name}");
-        }
-
-        public override void Stop(MediaPlayer player)
-        {
-            IsActive = false;
-            player.Pause();
-            Console.WriteLine($"Zatrzymuję: {Author} - {Name}");
-        }
-
-
-
-        public override string ToString()
-        {
-            return $"{Author} - {Name} ({Duration.Minutes:D2}:{Duration.Seconds:D2})";
-        }
-    }
+    
 }
