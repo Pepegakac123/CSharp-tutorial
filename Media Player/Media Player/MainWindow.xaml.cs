@@ -1,11 +1,13 @@
 ﻿using Microsoft.Win32;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Bson;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.IO.Packaging;
 using System.Linq;
 using System.Text;
-using Newtonsoft.Json;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -15,9 +17,8 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
-using System.IO;
+using System.Windows.Threading;
 using TagLib;
-using Newtonsoft.Json.Bson;
 
 namespace MusicPlayer
 {
@@ -32,10 +33,11 @@ namespace MusicPlayer
         private ObservableCollection<Song> displayedSongs;    // Utwory wyświetlane w SongsList
         private Song currentSong;                        // Aktualnie odtwarzany utwór (jeśli istnieje)
         private MediaPlayer mediaPlayer;
-        // Pomocnicze klasy
+        // Pomocnicze klasy/zmienne
         private PlaylistManager playlistManager;
         private SongManager songManager;
-
+        private DispatcherTimer positionTimer;
+        private bool isUserSeekingPosition = false;
         public MainWindow()
         {
             InitializeComponent();
@@ -58,6 +60,11 @@ namespace MusicPlayer
 
             //Inicjalizacja MediaPlayer
             mediaPlayer = new MediaPlayer();
+
+            //Timer
+            positionTimer = new DispatcherTimer();
+            positionTimer.Interval = TimeSpan.FromMilliseconds(500); // Co pół sekundy
+            
 
             // Event handlery - podstawowe (gotowe na dodanie więcej)
             SetupEventHandlers();
@@ -88,6 +95,11 @@ namespace MusicPlayer
 
 
             mediaPlayer.MediaOpened += MediaPlayer_MediaOpened;
+            positionTimer.Tick += PositionTimer_Tick;
+            ProgressSlider.ValueChanged += ProgressSlider_ValueChanged;
+            ProgressSlider.PreviewMouseDown += (s, e) => isUserSeekingPosition = true;
+            ProgressSlider.PreviewMouseUp += (s, e) => isUserSeekingPosition = false;
+
             PlayPauseButton.Click += PlayPauseButton_Click;
             PreviousButton.Click += PreviousButton_Click;
             NextButton.Click += NextButton_Click;
@@ -436,6 +448,7 @@ namespace MusicPlayer
             {
                 selectedSong.Stop(mediaPlayer);
                 selectedSong.IsActive = false;
+                positionTimer.Stop();
             }
             else
             {
@@ -444,12 +457,15 @@ namespace MusicPlayer
                     currentSong.Stop(mediaPlayer);
                     currentSong.IsActive = false;
                     PlayPauseButton.Content = "▶";
+                    positionTimer.Stop();
                 }
                 selectedSong.Play(mediaPlayer);
                 selectedSong.IsActive = true;
                 currentSong = selectedSong;
                 PlayPauseButton.Content = "⏸";
-                
+                positionTimer.Start();
+
+
             }
 
             RefreshSongInfo(selectedSong);
@@ -468,6 +484,28 @@ namespace MusicPlayer
             }
         }
 
+        private void PositionTimer_Tick(object sender, EventArgs e)
+        {
+            if (mediaPlayer != null && currentSong != null && currentSong.IsActive && !isUserSeekingPosition)
+            {
+                ProgressSlider.Value = mediaPlayer.Position.TotalSeconds;
+                CurrentTime.Text = mediaPlayer.Position.ToString(@"mm\:ss");
+            }
+        }
+        private void ProgressSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            if (Mouse.LeftButton == MouseButtonState.Pressed && mediaPlayer != null && mediaPlayer.NaturalDuration.HasTimeSpan)
+            {
+                mediaPlayer.Position = TimeSpan.FromSeconds(ProgressSlider.Value);
+
+                
+                isUserSeekingPosition = true;
+                Task.Delay(1000).ContinueWith(_ =>
+                {
+                    Dispatcher.Invoke(() => isUserSeekingPosition = false);
+                });
+            }
+        }
 
         private void SongsList_SelectionChanged(object sender, RoutedEventArgs e)
         {
@@ -484,13 +522,15 @@ namespace MusicPlayer
                 currentSong.Stop(mediaPlayer);
                 currentSong.IsActive = false;
                 PlayPauseButton.Content = "▶";
-                
+                positionTimer.Stop();
+
             }
             else
             {
                 currentSong.Play(mediaPlayer);
                 currentSong.IsActive = true;
                 PlayPauseButton.Content = "⏸";
+                positionTimer.Start();
 
             }
         }
@@ -566,7 +606,10 @@ namespace MusicPlayer
         public override void Play(MediaPlayer player)
         {
             IsActive = true;
-            player.Open(new Uri(this.Path));
+            if (player.Source == null || player.Source.LocalPath != this.Path)
+            {
+                player.Open(new Uri(this.Path));
+            }
             player.Play();
             Console.WriteLine($"Odtwarzam: {Author} - {Name}");
         }
