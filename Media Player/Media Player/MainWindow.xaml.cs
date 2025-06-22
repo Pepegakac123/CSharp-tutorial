@@ -587,6 +587,8 @@ namespace MusicPlayer
                 
                 CurrentSongTitle.Text = song.Name;
                 CurrentArtist.Text = string.IsNullOrWhiteSpace(song.Author) ? "Autor nieznany" : song.Author;
+                CurrentAlbum.Text = string.IsNullOrWhiteSpace(song.Album) ? "" : song.Album;
+                CoverImageControl.Source = song.CoverImage ?? songManager.GetDefaultCoverImage();
             }
             else
             {

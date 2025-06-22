@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media.Imaging;
 
 namespace MusicPlayer
 {
@@ -16,7 +17,7 @@ namespace MusicPlayer
     public class PlaylistManager
     {
         private readonly string _playlistsFilePath;
-
+        SongManager songManager = new SongManager();
         /// <summary>
         /// Konstruktor - ustawia ścieżkę do pliku z playlistami
         /// </summary>
@@ -53,7 +54,8 @@ namespace MusicPlayer
                         Name = song.Name,
                         Author = song.Author,
                         Duration = song.Duration.ToString(),
-                        Path = song.Path
+                        Path = song.Path,
+                        Album = song.Album
                     }).ToList()
                 }).ToList();
 
@@ -132,13 +134,14 @@ namespace MusicPlayer
                                     string author = songData.Author?.ToString() ?? "";
                                     string durationString = songData.Duration?.ToString() ?? "";
                                     string path = songData.Path?.ToString() ?? "";
-
+                                    string album = songData.Album?.ToString() ?? "";
                                     TimeSpan duration = TimeSpan.Parse(durationString);
 
                                     // Sprawdź czy plik nadal istnieje
                                     if (File.Exists(path))
                                     {
-                                        Song song = new Song(songName, author, duration, path);
+                                        Song song = new Song(songName, author, duration, path,album,null);
+                                        song.CoverImage = songManager.ExtractCoverImage(path);
                                         playlist.AddSong(song);
                                         songsLoaded++;
                                     }

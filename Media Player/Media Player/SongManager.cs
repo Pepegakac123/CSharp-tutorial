@@ -2,6 +2,7 @@
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using System.Windows.Media.Imaging;
 using TagLib;
 
 namespace MusicPlayer
@@ -37,6 +38,8 @@ namespace MusicPlayer
             string fileName = Path.GetFileNameWithoutExtension(filePath);
             string title = fileName;
             string author = "Nieznany Wykonawca";
+            string album = string.Empty;
+            BitmapImage coverImage = null;
             TimeSpan duration = TimeSpan.Zero;
 
             try
@@ -64,6 +67,32 @@ namespace MusicPlayer
                     {
                         duration = file.Properties.Duration;
                     }
+                    // Pobierz album
+                    if (file.Tag.Album != null)
+                    {
+                        album = file.Tag.Album;
+                    }
+
+                    // Pobierz okładkę
+                    if (file.Tag.Pictures != null && file.Tag.Pictures.Length > 0)
+                    {
+                        try
+                        {
+                            var cover = file.Tag.Pictures[0].Data.Data;
+                            var bitmap = new BitmapImage();
+                            bitmap.BeginInit();
+                            bitmap.StreamSource = new MemoryStream(cover);
+                            bitmap.CacheOption = BitmapCacheOption.OnLoad;
+                            bitmap.EndInit();
+                            bitmap.Freeze();
+                            coverImage = bitmap;
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"Błąd podczas wczytywania okładki dla {fileName}: {ex.Message}");
+                            coverImage = null; // Zostanie domyślna okładka
+                        }
+                    }
                 }
             }
             catch (Exception ex)
@@ -71,7 +100,7 @@ namespace MusicPlayer
                 Console.WriteLine($"Błąd podczas czytania metadanych dla {fileName}: {ex.Message}");
             }
 
-            return new Song(title, author, duration, filePath);
+            return new Song(title, author, duration, filePath, album,coverImage);
         }
 
         /// <summary>
@@ -110,6 +139,65 @@ namespace MusicPlayer
         public string GetFileNameOnly(string filePath)
         {
             return Path.GetFileName(filePath);
+        }
+        /// <summary>
+        /// Wyciąga tylko okładkę z pliku MP3
+        /// </summary>
+        /// <param name="filePath">Ścieżka do pliku MP3</param>
+        /// <returns>BitmapImage okładki lub null jeśli brak</returns>
+        public BitmapImage ExtractCoverImage(string filePath)
+        {
+            if (!System.IO.File.Exists(filePath))
+                return null;
+
+            try
+            {
+                using (var file = TagLib.File.Create(filePath))
+                {
+                    if (file.Tag.Pictures != null && file.Tag.Pictures.Length > 0)
+                    {
+                        try
+                        {
+                            var cover = file.Tag.Pictures[0].Data.Data;
+                            var bitmap = new BitmapImage();
+                            bitmap.BeginInit();
+                            bitmap.StreamSource = new MemoryStream(cover);
+                            bitmap.CacheOption = BitmapCacheOption.OnLoad;
+                            bitmap.EndInit();
+                            bitmap.Freeze();
+                            return bitmap;
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"Błąd podczas wczytywania okładki: {ex.Message}");
+                            return null;
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Błąd podczas odczytu pliku {filePath}: {ex.Message}");
+            }
+
+            return null;
+        }
+        /// <summary>
+        /// Pobiera domyślną okładkę dla utworu
+        /// </summary>
+        /// <returns>Domyślna Okładka</returns>
+        public BitmapImage GetDefaultCoverImage()
+        {
+            try
+            {
+                var uri = new Uri("pack://application:,,,/assets/default-cover.png");
+                return new BitmapImage(uri);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Błąd ładowania domyślnej okładki: {ex.Message}");
+                return null;
+            }
         }
     }
 }

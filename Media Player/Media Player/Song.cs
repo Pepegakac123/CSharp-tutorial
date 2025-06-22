@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 
 namespace MusicPlayer
 {
@@ -15,6 +16,8 @@ namespace MusicPlayer
         public string Name { get; set; }
         public string Author { get; set; }
         public TimeSpan Duration { get; set; }
+        public string Album { get; set; }
+        public BitmapImage CoverImage { get; set; }
         public bool IsActive { get; set; }
 
         protected SongData()
@@ -22,6 +25,8 @@ namespace MusicPlayer
             Name = string.Empty;
             Author = string.Empty;
             Duration = TimeSpan.Zero;
+            Album = string.Empty;
+            CoverImage = null;
             IsActive = false;
         }
 
@@ -38,12 +43,14 @@ namespace MusicPlayer
             Path = string.Empty;
         }
 
-        public Song(string name, string author, TimeSpan duration, string path) : base()
+        public Song(string name, string author, TimeSpan duration, string path, string album, BitmapImage coverImage) : base()
         {
             Name = name;
             Author = author;
             Duration = duration;
             Path = path;
+            Album = album; 
+            CoverImage = coverImage;
         }
 
         public override void Play(MediaPlayer player)

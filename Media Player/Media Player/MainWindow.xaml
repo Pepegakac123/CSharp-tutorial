@@ -59,10 +59,16 @@
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
 
-                <!-- Okładka albumu (placeholder) -->
-                <Border Grid.Column="0" Background="#E0E0E0" Margin="20" CornerRadius="10">
-                    <TextBlock Text="♪" FontSize="60" HorizontalAlignment="Center" 
-                             VerticalAlignment="Center" Foreground="#999"/>
+                <!-- Okładka albumu -->
+                <Border Grid.Column="0" Background="#E0E0E0" Margin="20" CornerRadius="10"
+        ClipToBounds="True" Width="110" Height="110" MaxWidth="110">
+                    <!-- DODAJ TO -->
+                    <Image x:Name="CoverImageControl" 
+           Stretch="UniformToFill"
+                            Margin="0"
+                          
+           HorizontalAlignment="Stretch" 
+           VerticalAlignment="Stretch"/>
                 </Border>
 
                 <!-- Informacje o utworze -->
@@ -71,6 +77,9 @@
                              FontSize="20" FontWeight="Bold" Margin="0,5"/>
                     <TextBlock x:Name="CurrentArtist" Text="" 
                              FontSize="14" Foreground="#666" Margin="0,2"/>
+                    <TextBlock x:Name="CurrentAlbum" Text="" 
+                             FontSize="14" Foreground="#666" Margin="0,2"/>
+
 
                     <!-- Pasek postępu -->
                     <Grid Margin="0,20,0,10">
