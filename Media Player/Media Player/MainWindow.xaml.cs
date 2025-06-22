@@ -529,9 +529,16 @@ namespace MusicPlayer
         {
             if (currentSong == null)
             {
-                return;
+                if (currentPlaylist.SongCount <= 0) return;
+                currentSong = currentPlaylist?.Songs.FirstOrDefault();
+                currentSong.Play(mediaPlayer);
+                currentSong.IsActive = true;
+                PlayPauseButton.Content = "⏸";
+                positionTimer.Start();
+                RefreshSongInfo(currentSong);
+
             }
-            if(currentSong.IsActive)
+            else if(currentSong.IsActive)
             {
                 currentSong.Stop(mediaPlayer);
                 currentSong.IsActive = false;
@@ -554,6 +561,30 @@ namespace MusicPlayer
         /// </summary>
         private void NextButton_Click(object sender, RoutedEventArgs e)
         {
+            if(currentSong == null || currentPlaylist == null ) return;
+
+            int currIndex = currentPlaylist.Songs.ToList().IndexOf(currentSong);
+            if(currIndex != -1)
+            {
+                int nextIndex = (currIndex + 1) >= currentPlaylist.Songs.Count ? 0 : currIndex + 1;
+                Song selectedSong = currentPlaylist.Songs[nextIndex];
+                Console.WriteLine($"Obecna Indeks - {currIndex} Nastepna Piosenka - {nextIndex}");
+                
+                if (currentSong.IsActive)
+                 {
+                        currentSong.Stop(mediaPlayer);
+                        currentSong.IsActive = false;
+                        positionTimer.Stop();
+                 }
+                    selectedSong.Play(mediaPlayer);
+                    selectedSong.IsActive = true;
+                    currentSong = selectedSong;
+                    SongsList.SelectedItem = selectedSong;
+                PlayPauseButton.Content = "⏸";
+                    positionTimer.Start();
+                RefreshSongInfo(selectedSong);
+
+            }
 
         }
         /// <summary>
@@ -562,7 +593,30 @@ namespace MusicPlayer
         /// </summary>
         private void PreviousButton_Click(object sender, RoutedEventArgs e)
         {
+            if (currentSong == null || currentPlaylist == null) return;
 
+            int currIndex = currentPlaylist.Songs.ToList().IndexOf(currentSong);
+            if (currIndex != -1)
+            {
+                int prevIndex = (currIndex - 1) < 0 ? currentPlaylist.Songs.Count-1 : currIndex - 1;
+                Song selectedSong = currentPlaylist.Songs[prevIndex];
+                Console.WriteLine($"Obecna Indeks - {currIndex} Nastepna Piosenka - {prevIndex}");
+
+                if (currentSong.IsActive)
+                {
+                    currentSong.Stop(mediaPlayer);
+                    currentSong.IsActive = false;
+                    positionTimer.Stop();
+                }
+                selectedSong.Play(mediaPlayer);
+                selectedSong.IsActive = true;
+                currentSong = selectedSong;
+                SongsList.SelectedItem = selectedSong;
+                PlayPauseButton.Content = "⏸";
+                positionTimer.Start();
+                RefreshSongInfo(selectedSong);
+
+            }
         }
         /// <summary>
         /// Obsługuje zmiany slidera głośności - aktualizuje głośność MediaPlayera w czasie rzeczywistym
@@ -588,7 +642,7 @@ namespace MusicPlayer
                 CurrentSongTitle.Text = song.Name;
                 CurrentArtist.Text = string.IsNullOrWhiteSpace(song.Author) ? "Autor nieznany" : song.Author;
                 CurrentAlbum.Text = string.IsNullOrWhiteSpace(song.Album) ? "" : song.Album;
-                CoverImageControl.Source = song.CoverImage ?? songManager.GetDefaultCoverImage();
+                CoverImageBrush.ImageSource = song.CoverImage ?? songManager.GetDefaultCoverImage();
             }
             else
             {
