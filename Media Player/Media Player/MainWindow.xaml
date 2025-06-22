@@ -169,8 +169,8 @@
                                  Margin="15,10" FontSize="14"/>
                         <Button Grid.Column="1" x:Name="AddSongsButton" Background="#1E3A8A" 
                               Content="Dodaj pliki" 
-                              Style="{StaticResource PlaylistButtonStyle}
-                            " 
+                              Style="{StaticResource PlaylistButtonStyle}"
+                             
                               Margin="5,5,15,5"/>
                     </Grid>
 

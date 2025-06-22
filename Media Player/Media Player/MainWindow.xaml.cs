@@ -94,6 +94,7 @@ namespace MusicPlayer
 
 
             mediaPlayer.MediaOpened += MediaPlayer_MediaOpened;
+            mediaPlayer.MediaEnded += MediaPlayer_MediaEnded;
             positionTimer.Tick += PositionTimer_Tick;
             ProgressSlider.ValueChanged += ProgressSlider_ValueChanged;
             ProgressSlider.PreviewMouseDown += (s, e) => isUserSeekingPosition = true;
@@ -489,6 +490,34 @@ namespace MusicPlayer
                 ProgressSlider.Value = 0;
 
                 TotalTime.Text = duration.ToString(@"mm\:ss");
+            }
+        }
+
+        private void MediaPlayer_MediaEnded(object sender, EventArgs e)
+        {
+            if (currentSong == null || currentPlaylist == null) return;
+
+            int currIndex = currentPlaylist.Songs.ToList().IndexOf(currentSong);
+            if (currIndex != -1)
+            {
+                int nextIndex = (currIndex + 1) >= currentPlaylist.Songs.Count ? 0 : currIndex + 1;
+                Song selectedSong = currentPlaylist.Songs[nextIndex];
+                Console.WriteLine($"Obecna Indeks - {currIndex} Nastepna Piosenka - {nextIndex}");
+
+                if (currentSong.IsActive)
+                {
+                    currentSong.Stop(mediaPlayer);
+                    currentSong.IsActive = false;
+                    positionTimer.Stop();
+                }
+                selectedSong.Play(mediaPlayer);
+                selectedSong.IsActive = true;
+                currentSong = selectedSong;
+                SongsList.SelectedItem = selectedSong;
+                PlayPauseButton.Content = "⏸";
+                positionTimer.Start();
+                RefreshSongInfo(selectedSong);
+
             }
         }
         /// <summary>
