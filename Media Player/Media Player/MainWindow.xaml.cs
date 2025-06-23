@@ -32,12 +32,15 @@ namespace MusicPlayer
         private Playlist currentPlaylist;                     // Aktualnie wybrana playlista
         private ObservableCollection<Song> displayedSongs;    // Utwory wyświetlane w SongsList
         private Song currentSong;                        // Aktualnie odtwarzany utwór (jeśli istnieje)
+        private UserSettings userSettings;
         private MediaPlayer mediaPlayer;
+        private SettingsManager settingsManager;
         // Pomocnicze klasy/zmienne
         private PlaylistManager playlistManager;
         private SongManager songManager;
         private DispatcherTimer positionTimer;
         private bool isUserSeekingPosition = false;
+        private TimeSpan? positionToRestore = null;
         public MainWindow()
         {
             InitializeComponent();
@@ -52,6 +55,7 @@ namespace MusicPlayer
             // Inicjalizacja pomocniczych klas
             playlistManager = new PlaylistManager();
             songManager = new SongManager();
+            settingsManager = new SettingsManager();
 
             // Inicjalizacja kolekcji - struktura dla wielu playlist
             allPlaylists = new ObservableCollection<Playlist>();
@@ -71,14 +75,18 @@ namespace MusicPlayer
 
             // Załaduj dane z pliku
             LoadPlaylistsFromFile();
+            
 
             // Upewnij się że istnieje domyślna playlista
             EnsureDefaultPlaylistExists();
+
 
             // Ustaw interfejs
             SetupInitialInterface();
 
             UpdateSongsCount();
+            // Załaduj Ustawienia z pliku
+            LoadSettingsFromFile();
         }
 
         /// <summary>
@@ -204,11 +212,62 @@ namespace MusicPlayer
         }
 
         /// <summary>
+        /// Wczytuje ustawienia użytkownika z pliku i przywraca stan aplikacji
+        /// Przywraca głośność, wybraną playlistę, aktualny utwór i pozycję odtwarzania
+        /// </summary>
+        private void LoadSettingsFromFile()
+        {
+            userSettings = settingsManager.LoadSettings();
+            VolumeSlider.Value = userSettings.Volume;  
+            mediaPlayer.Volume = userSettings.Volume / 100.0;
+            if (!string.IsNullOrEmpty(userSettings.SelectedPlaylistName))
+            {
+                var savedPlaylist = FindPlaylistByName(userSettings.SelectedPlaylistName);
+                if (savedPlaylist != null)
+                {
+                    PlaylistsList.SelectedItem = savedPlaylist;
+                    currentPlaylist = savedPlaylist;
+                }
+            }
+
+            // Przywróć aktualny utwór
+            if (!string.IsNullOrEmpty(userSettings.CurrentSongPath))
+            {
+                var savedSong = currentPlaylist?.Songs.FirstOrDefault(s => s.Path == userSettings.CurrentSongPath);
+                if (savedSong != null && System.IO.File.Exists(userSettings.CurrentSongPath))
+                {
+                    currentSong = savedSong;
+                    SongsList.SelectedItem = savedSong;
+                    positionToRestore = userSettings.CurrentPosition;
+                    mediaPlayer.Open(new Uri(savedSong.Path));
+                    RefreshSongInfo(savedSong);
+                }
+            }
+        }
+
+        /// <summary>
         /// Zapisuje playlisty przy zamykaniu aplikacji
         /// </summary>
         private void MainWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
             playlistManager.SavePlaylists(allPlaylists);
+            SaveCurrentSettings();        
+        }
+
+        /// <summary>
+        /// Zapisuje aktualne ustawienia użytkownika do pliku JSON
+        /// Zapisuje głośność, wybraną playlistę, aktualny utwór i pozycję odtwarzania
+        /// </summary>
+        private void SaveCurrentSettings()
+        {
+            var settings = new UserSettings
+            {
+                Volume = (int)VolumeSlider.Value,
+                SelectedPlaylistName = currentPlaylist?.Name ?? string.Empty,
+                CurrentSongPath = currentSong?.Path ?? string.Empty,
+                CurrentPosition = mediaPlayer.Position
+            };
+            settingsManager.SaveSettings(settings);
         }
 
         /// <summary>
@@ -482,14 +541,42 @@ namespace MusicPlayer
         /// </summary>
         private void MediaPlayer_MediaOpened(object sender, EventArgs e)
         {
-              if (mediaPlayer.NaturalDuration.HasTimeSpan)
+            if (mediaPlayer.NaturalDuration.HasTimeSpan)
             {
                 var duration = mediaPlayer.NaturalDuration.TimeSpan;
                 ProgressSlider.Maximum = duration.TotalSeconds;
                 ProgressSlider.Minimum = 0;
-                ProgressSlider.Value = 0;
 
                 TotalTime.Text = duration.ToString(@"mm\:ss");
+
+                if (positionToRestore.HasValue)
+                {
+                    mediaPlayer.Position = positionToRestore.Value;
+
+                    Task.Delay(100).ContinueWith(_ =>
+                    {
+                        Dispatcher.Invoke(() =>
+                        {
+                            var actualPosition = mediaPlayer.Position;
+                            ProgressSlider.Value = actualPosition.TotalSeconds;
+                            CurrentTime.Text = actualPosition.ToString(@"mm\:ss");
+
+                            if (currentSong != null)
+                            {
+                                RefreshSongInfo(currentSong);
+                            }
+
+                            Console.WriteLine($"UI zaktualizowane: {actualPosition.ToString(@"mm\:ss")} / {duration.ToString(@"mm\:ss")}");
+                        });
+                    });
+
+                    positionToRestore = null;
+                }
+                else
+                {
+                    ProgressSlider.Value = 0;
+                    CurrentTime.Text = "00:00";
+                }
             }
         }
 

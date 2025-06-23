@@ -6,7 +6,7 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{374B0213-B6A4-4467-8008-31E51A4690EB}</ProjectGuid>
     <OutputType>WinExe</OutputType>
-    <RootNamespace>Media_Player</RootNamespace>
+    <RootNamespace>MusicPlayer</RootNamespace>
     <AssemblyName>Media Player</AssemblyName>
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
@@ -89,6 +89,8 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="SettingsManager.cs" />
+    <Compile Include="UserSettings.cs" />
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
