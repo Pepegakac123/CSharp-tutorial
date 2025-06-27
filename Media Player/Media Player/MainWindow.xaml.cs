@@ -1,24 +1,13 @@
 ﻿using Microsoft.Win32;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Bson;
 using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.IO;
-using System.IO.Packaging;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
 using System.Windows.Threading;
-using TagLib;
 
 namespace MusicPlayer
 {
@@ -27,15 +16,15 @@ namespace MusicPlayer
     /// </summary>
     public partial class MainWindow : Window
     {
-        // GŁÓWNE ZMIENNE - struktura gotowa na rozbudowę
+        // GŁÓWNE ZMIENNE
         private ObservableCollection<Playlist> allPlaylists;  // Wszystkie playlisty 
         private Playlist currentPlaylist;                     // Aktualnie wybrana playlista
         private ObservableCollection<Song> displayedSongs;    // Utwory wyświetlane w SongsList
-        private Song currentSong;                        // Aktualnie odtwarzany utwór (jeśli istnieje)
+        private Song currentSong;                        // Aktualnie odtwarzany utwór
         private UserSettings userSettings;
         private MediaPlayer mediaPlayer;
-        private SettingsManager settingsManager;
         // Pomocnicze klasy/zmienne
+        private SettingsManager settingsManager;
         private PlaylistManager playlistManager;
         private SongManager songManager;
         private DispatcherTimer positionTimer;
@@ -48,7 +37,7 @@ namespace MusicPlayer
         }
 
         /// <summary>
-        /// Inicjalizacja odtwarzacza - gotowa na rozbudowę
+        /// Inicjalizacja odtwarzacza 
         /// </summary>
         private void InitializePlayer()
         {
@@ -62,15 +51,15 @@ namespace MusicPlayer
             displayedSongs = new ObservableCollection<Song>();
             SongsList.ItemsSource = displayedSongs;
 
-            //Inicjalizacja MediaPlayer
+
             mediaPlayer = new MediaPlayer();
 
             //Timer
             positionTimer = new DispatcherTimer();
-            positionTimer.Interval = TimeSpan.FromMilliseconds(500); // Co pół sekundy
+            positionTimer.Interval = TimeSpan.FromMilliseconds(500); 
             
 
-            // Event handlery - podstawowe (gotowe na dodanie więcej)
+            // Event handlery - podstawowe
             SetupEventHandlers();
 
             // Załaduj dane z pliku
@@ -90,7 +79,7 @@ namespace MusicPlayer
         }
 
         /// <summary>
-        /// Konfiguruje event handlery - gotowe na dodanie więcej
+        /// Konfiguruje event handlery
         /// </summary>
         private void SetupEventHandlers()
         {
@@ -158,8 +147,6 @@ namespace MusicPlayer
             {
                 PlaylistsList.SelectedItem = defaultPlaylist;
             }
-
-            // Pokaż utwory z aktualnej playlisty
             RefreshDisplayedSongs();
         }
 
@@ -359,7 +346,7 @@ namespace MusicPlayer
   
 
         /// <summary>
-        /// Znajduje playlistę po nazwie - przydatne przy rozbudowie
+        /// Znajduje playlistę po nazwie
         /// </summary>
         /// <param name="name">Nazwa playlisty</param>
         /// <returns>Znaleziona playlista lub null</returns>
@@ -368,15 +355,6 @@ namespace MusicPlayer
             return allPlaylists.FirstOrDefault(p => p.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
         }
 
-        /// <summary>
-        /// Sprawdza czy nazwa playlisty już istnieje - przydatne przy dodawaniu nowych
-        /// </summary>
-        /// <param name="name">Nazwa do sprawdzenia</param>
-        /// <returns>True jeśli nazwa już istnieje</returns>
-        private bool PlaylistNameExists(string name)
-        {
-            return playlistManager.PlaylistNameExists(allPlaylists, name);
-        }
 
         /// <summary>
         /// Pokazuje rezultat dodawania utworów - metoda pomocnicza
@@ -673,7 +651,7 @@ namespace MusicPlayer
         }
         /// <summary>
         /// Obsługuje kliknięcie przycisku następny utwór - przechodzi do kolejnego utworu w playliście
-        /// TODO: Implementacja funkcjonalności przechodzenia do następnego utworu
+
         /// </summary>
         private void NextButton_Click(object sender, RoutedEventArgs e)
         {
