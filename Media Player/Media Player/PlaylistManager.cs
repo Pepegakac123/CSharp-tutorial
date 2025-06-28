@@ -140,8 +140,7 @@ namespace MusicPlayer
                                     // Sprawdź czy plik nadal istnieje
                                     if (File.Exists(path))
                                     {
-                                        Song song = new Song(songName, author, duration, path,album,null);
-                                        song.CoverImage = songManager.ExtractCoverImage(path);
+                                        Song song = songManager.CreateSongFromFile(path);
                                         playlist.AddSong(song);
                                         songsLoaded++;
                                     }

@@ -74,25 +74,7 @@ namespace MusicPlayer
                     }
 
                     // Pobierz okładkę
-                    if (file.Tag.Pictures != null && file.Tag.Pictures.Length > 0)
-                    {
-                        try
-                        {
-                            var cover = file.Tag.Pictures[0].Data.Data;
-                            var bitmap = new BitmapImage();
-                            bitmap.BeginInit();
-                            bitmap.StreamSource = new MemoryStream(cover);
-                            bitmap.CacheOption = BitmapCacheOption.OnLoad;
-                            bitmap.EndInit();
-                            bitmap.Freeze();
-                            coverImage = bitmap;
-                        }
-                        catch (Exception ex)
-                        {
-                            Console.WriteLine($"Błąd podczas wczytywania okładki dla {fileName}: {ex.Message}");
-                            coverImage = null; // Zostanie domyślna okładka
-                        }
-                    }
+                    coverImage = ExtractCoverImage(filePath) ?? GetDefaultCoverImage();
                 }
             }
             catch (Exception ex)
