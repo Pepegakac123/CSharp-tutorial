@@ -28,7 +28,6 @@ namespace MusicPlayer
         private PlaylistManager playlistManager;
         private SongManager songManager;
         private DispatcherTimer positionTimer;
-        private bool isUserSeekingPosition = false;
         private TimeSpan? positionToRestore = null;
         public MainWindow()
         {
@@ -94,8 +93,6 @@ namespace MusicPlayer
             mediaPlayer.MediaEnded += MediaPlayer_MediaEnded;
             positionTimer.Tick += PositionTimer_Tick;
             ProgressSlider.ValueChanged += ProgressSlider_ValueChanged;
-            ProgressSlider.PreviewMouseDown += (s, e) => isUserSeekingPosition = true;
-            ProgressSlider.PreviewMouseUp += (s, e) => isUserSeekingPosition = false;
 
             PlayPauseButton.Click += PlayPauseButton_Click;
             PreviousButton.Click += PreviousButton_Click;
@@ -591,7 +588,7 @@ namespace MusicPlayer
         /// </summary>
         private void PositionTimer_Tick(object sender, EventArgs e)
         {
-            if (mediaPlayer != null && currentSong != null && currentSong.IsActive && !isUserSeekingPosition)
+            if (mediaPlayer != null && currentSong != null && currentSong.IsActive)
             {
                 ProgressSlider.Value = mediaPlayer.Position.TotalSeconds;
                 CurrentTime.Text = mediaPlayer.Position.ToString(@"mm\:ss");
@@ -606,13 +603,6 @@ namespace MusicPlayer
             if (Mouse.LeftButton == MouseButtonState.Pressed && mediaPlayer != null && mediaPlayer.NaturalDuration.HasTimeSpan)
             {
                 mediaPlayer.Position = TimeSpan.FromSeconds(ProgressSlider.Value);
-
-                
-                isUserSeekingPosition = true;
-                Task.Delay(1000).ContinueWith(_ =>
-                {
-                    Dispatcher.Invoke(() => isUserSeekingPosition = false);
-                });
             }
         }
         /// <summary>
