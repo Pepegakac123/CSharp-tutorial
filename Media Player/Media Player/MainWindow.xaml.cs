@@ -1,6 +1,7 @@
 ﻿using Microsoft.Win32;
 using System;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
@@ -23,12 +24,19 @@ namespace MusicPlayer
         private Song currentSong;                        // Aktualnie odtwarzany utwór
         private UserSettings userSettings;
         private MediaPlayer mediaPlayer;
+
+        // ZMIENNE DLA UŻYTKOWNIKÓW
+        private ObservableCollection<User> allUsers;           // Wszyscy użytkownicy
+        private User currentUser;                              // Aktualny użytkownik
+        private UserManager userManager;                       // Manager użytkowników
+
         // Pomocnicze klasy/zmienne
         private SettingsManager settingsManager;
         private PlaylistManager playlistManager;
         private SongManager songManager;
         private DispatcherTimer positionTimer;
         private TimeSpan? positionToRestore = null;
+
         public MainWindow()
         {
             InitializeComponent();
@@ -44,30 +52,36 @@ namespace MusicPlayer
             playlistManager = new PlaylistManager();
             songManager = new SongManager();
             settingsManager = new SettingsManager();
+            userManager = new UserManager();
 
             // Inicjalizacja kolekcji - struktura dla wielu playlist
             allPlaylists = new ObservableCollection<Playlist>();
             displayedSongs = new ObservableCollection<Song>();
             SongsList.ItemsSource = displayedSongs;
 
+            // Inicjalizacja kolekcji użytkowników
+            allUsers = new ObservableCollection<User>();
+            UsersList.ItemsSource = allUsers;
 
             mediaPlayer = new MediaPlayer();
 
             //Timer
             positionTimer = new DispatcherTimer();
-            positionTimer.Interval = TimeSpan.FromMilliseconds(500); 
-            
+            positionTimer.Interval = TimeSpan.FromMilliseconds(500);
 
             // Event handlery - podstawowe
             SetupEventHandlers();
 
+            // Załaduj użytkowników z pliku
+            LoadUsersFromFile();
+
+            EnsureDefaultUserExists();
+
             // Załaduj dane z pliku
             LoadPlaylistsFromFile();
-            
 
             // Upewnij się że istnieje domyślna playlista
             EnsureDefaultPlaylistExists();
-
 
             // Ustaw interfejs
             SetupInitialInterface();
@@ -88,7 +102,6 @@ namespace MusicPlayer
 
             SongsList.MouseDoubleClick += SongsList_MouseDoubleClick;
 
-
             mediaPlayer.MediaOpened += MediaPlayer_MediaOpened;
             mediaPlayer.MediaEnded += MediaPlayer_MediaEnded;
             positionTimer.Tick += PositionTimer_Tick;
@@ -103,6 +116,53 @@ namespace MusicPlayer
             DeletePlaylistButton.Click += DeletePlaylistButton_Click;
             CancelPlaylistButton.Click += CancelPlaylistButton_Click;
             OkPlaylistButton.Click += OkPlaylistButton_Click;
+
+            // Event handlery dla użytkowników
+            CreateUserButton.Click += CreateUserButton_Click;
+            CancelUserButton.Click += CancelUserButton_Click;
+            OkUserButton.Click += OkUserButton_Click;
+            UsersList.SelectionChanged += UsersList_SelectionChanged;
+        }
+
+        /// <summary>
+        /// Wczytuje użytkowników z pliku
+        /// </summary>
+        private void LoadUsersFromFile()
+        {
+            var loadedUsers = userManager.LoadUsers();
+
+            allUsers.Clear();
+            foreach (var user in loadedUsers)
+            {
+                allUsers.Add(user);
+            }
+
+            Console.WriteLine($"Wczytano {allUsers.Count} użytkowników");
+        }
+
+        /// <summary>
+        /// Zapewnia istnienie domyślnego użytkownika
+        /// </summary>
+        private void EnsureDefaultUserExists()
+        {
+            if (allUsers.Count == 0)
+            {
+                var defaultUser = new User("Domyślny Użytkownik");
+                defaultUser.CreateDefaultPlaylist();
+                defaultUser.IsActive = true;
+                allUsers.Add(defaultUser);
+                Console.WriteLine("Utworzono domyślnego użytkownika");
+            }
+
+            if (currentUser == null)
+            {
+                currentUser = allUsers.FirstOrDefault();
+                if (currentUser != null)
+                {
+                    currentUser.IsActive = true;
+                    UsersList.SelectedItem = currentUser;
+                }
+            }
         }
 
         /// <summary>
@@ -110,14 +170,17 @@ namespace MusicPlayer
         /// </summary>
         private void EnsureDefaultPlaylistExists()
         {
-            // Szukaj domyślnej playlisty
-            var defaultPlaylist = FindPlaylistByName("Wszystkie utwory");
+            if (currentUser == null) return;
+
+            // Szukaj domyślnej playlisty w aktualnym użytkowniku
+            var defaultPlaylist = currentUser.FindPlaylistByName("Wszystkie utwory");
 
             // Jeśli nie istnieje, utwórz ją
             if (defaultPlaylist == null)
             {
                 defaultPlaylist = new Playlist("Wszystkie utwory");
-                allPlaylists.Add(defaultPlaylist);
+                defaultPlaylist.IsSystemPlaylist = true;
+                currentUser.AddPlaylist(defaultPlaylist);
                 Console.WriteLine("Utworzono domyślną playlistę 'Wszystkie utwory'");
             }
             else
@@ -126,7 +189,6 @@ namespace MusicPlayer
             }
 
             // Ustaw jako aktualną
-            defaultPlaylist.IsSystemPlaylist = true;
             currentPlaylist = defaultPlaylist;
         }
 
@@ -135,16 +197,134 @@ namespace MusicPlayer
         /// </summary>
         private void SetupInitialInterface()
         {
-            // Ustaw źródło danych dla listy playlist
-            PlaylistsList.ItemsSource = allPlaylists;
+            if (currentUser != null)
+            {
+                // Ustaw źródło danych dla listy playlist
+                allPlaylists.Clear();
+                foreach (var playlist in currentUser.UserPlaylists)
+                {
+                    allPlaylists.Add(playlist);
+                }
+                PlaylistsList.ItemsSource = allPlaylists;
 
-            // Znajdź i wybierz domyślną playlistę
-            var defaultPlaylist = FindPlaylistByName("Wszystkie utwory");
+             
+                var defaultPlaylist = currentUser.FindPlaylistByName("Wszystkie utwory");
+                if (defaultPlaylist != null)
+                {
+                    PlaylistsList.SelectedItem = defaultPlaylist;
+                    currentPlaylist = defaultPlaylist;
+                }
+
+                RefreshDisplayedSongs();
+                CurrentUserLabel.Text = $"Użytkownik: {currentUser.Name}";
+            }
+        }
+
+        /// <summary>
+        /// Obsługuje zmianę wybranego użytkownika
+        /// </summary>
+        private void UsersList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (UsersList.SelectedItem is User selectedUser)
+            {
+                SwitchToUser(selectedUser);
+            }
+        }
+
+        /// <summary>
+        /// Przełącza na innego użytkownika
+        /// </summary>
+        /// <param name="user">Użytkownik do przełączenia</param>
+        private void SwitchToUser(User user)
+        {
+            if (user == null) return;
+
+            
+            if (currentUser != null)
+            {
+                SaveCurrentUserState();
+                currentUser.IsActive = false;
+            }
+
+            
+            currentUser = user;
+            currentUser.IsActive = true;
+
+            
+            allPlaylists.Clear();
+            foreach (var playlist in currentUser.UserPlaylists)
+            {
+                allPlaylists.Add(playlist);
+            }
+
+            
+            var defaultPlaylist = currentUser.FindPlaylistByName("Wszystkie utwory");
             if (defaultPlaylist != null)
             {
+                currentPlaylist = defaultPlaylist;
                 PlaylistsList.SelectedItem = defaultPlaylist;
             }
+
+            // Przywróć ustawienia użytkownika
+            RestoreUserSettings(currentUser);
+
+            // Odśwież interfejs
             RefreshDisplayedSongs();
+            UpdateSongsCount();
+            CurrentUserLabel.Text = $"Użytkownik: {currentUser.Name}";
+
+            Console.WriteLine($"Przełączono na użytkownika: {currentUser.Name}");
+        }
+
+        /// <summary>
+        /// Zapisuje stan aktualnego użytkownika
+        /// </summary>
+        private void SaveCurrentUserState()
+        {
+            if (currentUser == null) return;
+
+            currentUser.Settings.Volume = (int)VolumeSlider.Value;
+            currentUser.Settings.SelectedPlaylistName = currentPlaylist?.Name ?? string.Empty;
+            currentUser.Settings.CurrentSongPath = currentSong?.Path ?? string.Empty;
+            currentUser.Settings.CurrentPosition = mediaPlayer.Position;
+        }
+
+        /// <summary>
+        /// Przywraca ustawienia użytkownika
+        /// </summary>
+        /// <param name="user">Użytkownik</param>
+        private void RestoreUserSettings(User user)
+        {
+            if (user?.Settings == null) return;
+
+            // Przywróć głośność
+            VolumeSlider.Value = user.Settings.Volume;
+            mediaPlayer.Volume = user.Settings.Volume / 100.0;
+
+            // Przywróć wybraną playlistę
+            if (!string.IsNullOrEmpty(user.Settings.SelectedPlaylistName))
+            {
+                var savedPlaylist = currentUser.FindPlaylistByName(user.Settings.SelectedPlaylistName);
+                if (savedPlaylist != null)
+                {
+                    currentPlaylist = savedPlaylist;
+                    PlaylistsList.SelectedItem = savedPlaylist;
+                }
+            }
+
+            // Przywróć aktualny utwór
+            if (!string.IsNullOrEmpty(user.Settings.CurrentSongPath) && File.Exists(user.Settings.CurrentSongPath))
+            {
+                var savedSong = currentPlaylist?.Songs.FirstOrDefault(s => s.Path == user.Settings.CurrentSongPath);
+                if (savedSong != null)
+                {
+                    currentSong = savedSong;
+                    SongsList.SelectedItem = savedSong;
+                    positionToRestore = user.Settings.CurrentPosition;
+                    mediaPlayer.Open(new Uri(savedSong.Path));
+                    RefreshSongInfo(savedSong);
+                }
+            }
         }
 
         /// <summary>
@@ -184,48 +364,35 @@ namespace MusicPlayer
         /// </summary>
         private void LoadPlaylistsFromFile()
         {
-            var loadedPlaylists = playlistManager.LoadPlaylists();
-
-            allPlaylists.Clear();
-            foreach (var playlist in loadedPlaylists)
-            {
-                allPlaylists.Add(playlist);
-            }
-
-            Console.WriteLine($"Wczytano {allPlaylists.Count} playlist");
+            // Ta metoda teraz jest używana tylko do kompatybilności wstecznej
+            // Playlisty są teraz zarządzane przez użytkowników
+            Console.WriteLine("Playlisty są teraz zarządzane przez użytkowników");
         }
 
         /// <summary>
         /// Wczytuje ustawienia użytkownika z pliku i przywraca stan aplikacji
-        /// Przywraca głośność, wybraną playlistę, aktualny utwór i pozycję odtwarzania
         /// </summary>
         private void LoadSettingsFromFile()
         {
             userSettings = settingsManager.LoadSettings();
-            VolumeSlider.Value = userSettings.Volume;  
-            mediaPlayer.Volume = userSettings.Volume / 100.0;
-            if (!string.IsNullOrEmpty(userSettings.SelectedPlaylistName))
+
+            // Przywróć aktualnego użytkownika
+            if (!string.IsNullOrEmpty(userSettings.CurrentUserName))
             {
-                var savedPlaylist = FindPlaylistByName(userSettings.SelectedPlaylistName);
-                if (savedPlaylist != null)
+                var savedUser = allUsers.FirstOrDefault(u => u.Name == userSettings.CurrentUserName);
+                if (savedUser != null)
                 {
-                    PlaylistsList.SelectedItem = savedPlaylist;
-                    currentPlaylist = savedPlaylist;
+                    UsersList.SelectedItem = savedUser;
+                    SwitchToUser(savedUser);
+                    return;
                 }
             }
 
-            // Przywróć aktualny utwór
-            if (!string.IsNullOrEmpty(userSettings.CurrentSongPath))
+            // Jeśli nie znaleziono zapisanego użytkownika, ustaw pierwszego
+            if (allUsers.Count > 0)
             {
-                var savedSong = currentPlaylist?.Songs.FirstOrDefault(s => s.Path == userSettings.CurrentSongPath);
-                if (savedSong != null && System.IO.File.Exists(userSettings.CurrentSongPath))
-                {
-                    currentSong = savedSong;
-                    SongsList.SelectedItem = savedSong;
-                    positionToRestore = userSettings.CurrentPosition;
-                    mediaPlayer.Open(new Uri(savedSong.Path));
-                    RefreshSongInfo(savedSong);
-                }
+                UsersList.SelectedItem = allUsers[0];
+                SwitchToUser(allUsers[0]);
             }
         }
 
@@ -234,13 +401,13 @@ namespace MusicPlayer
         /// </summary>
         private void MainWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
-            playlistManager.SavePlaylists(allPlaylists);
-            SaveCurrentSettings();        
+            SaveCurrentUserState();
+            userManager.SaveUsers(allUsers);
+            SaveCurrentSettings();
         }
 
         /// <summary>
         /// Zapisuje aktualne ustawienia użytkownika do pliku JSON
-        /// Zapisuje głośność, wybraną playlistę, aktualny utwór i pozycję odtwarzania
         /// </summary>
         private void SaveCurrentSettings()
         {
@@ -249,7 +416,8 @@ namespace MusicPlayer
                 Volume = (int)VolumeSlider.Value,
                 SelectedPlaylistName = currentPlaylist?.Name ?? string.Empty,
                 CurrentSongPath = currentSong?.Path ?? string.Empty,
-                CurrentPosition = mediaPlayer.Position
+                CurrentPosition = mediaPlayer.Position,
+                CurrentUserName = currentUser?.Name ?? string.Empty
             };
             settingsManager.SaveSettings(settings);
         }
@@ -259,9 +427,15 @@ namespace MusicPlayer
         /// </summary>
         private void AddSongsButton_Click(object sender, RoutedEventArgs e)
         {
-            //Globalna Plylists
-            var systemPlaylist = FindPlaylistByName("Wszystkie utwory");
+            if (currentUser == null)
+            {
+                MessageBox.Show("Brak wybranego użytkownika!", "Błąd",
+                              MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
 
+            //Globalna Playlist dla użytkownika
+            var systemPlaylist = currentUser.FindPlaylistByName("Wszystkie utwory");
 
             // Sprawdź czy mamy wybraną playlistę
             if (currentPlaylist == null)
@@ -301,7 +475,7 @@ namespace MusicPlayer
                     // Dodaj do aktualnej playlisty
                     if (currentPlaylist.AddSong(newSong))
                     {
-                        if (!currentPlaylist.IsSystemPlaylist)
+                        if (!currentPlaylist.IsSystemPlaylist && systemPlaylist != null)
                         {
                             systemPlaylist.AddSong(newSong); // Dodaj do systemowej playlisty "Wszystkie utwory"
                         }
@@ -340,19 +514,7 @@ namespace MusicPlayer
             }
         }
 
-  
-
-        /// <summary>
-        /// Znajduje playlistę po nazwie
-        /// </summary>
-        /// <param name="name">Nazwa playlisty</param>
-        /// <returns>Znaleziona playlista lub null</returns>
-        private Playlist FindPlaylistByName(string name)
-        {
-            return allPlaylists.FirstOrDefault(p => p.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
-        }
-
-
+ 
         /// <summary>
         /// Pokazuje rezultat dodawania utworów - metoda pomocnicza
         /// </summary>
@@ -379,20 +541,19 @@ namespace MusicPlayer
         private void CreatePlaylistButton_Click(object sender, RoutedEventArgs e)
         {
             CreatePlaylistDialog.Visibility = Visibility.Visible;
-
         }
 
         /// <summary>
-        /// Obsługuje anulowanie tworzenia nowej playlisty - ukrywa dialog i czyści formularz
+        /// Obsługuje anulowanie tworzenia nowej playlisty
         /// </summary>
         private void CancelPlaylistButton_Click(object sender, RoutedEventArgs e)
         {
             CreatePlaylistDialog.Visibility = Visibility.Collapsed;
-            ClearForm();
+            ClearPlaylistForm();
         }
 
         /// <summary>
-        /// Obsługuje potwierdzenie tworzenia nowej playlisty - waliduje nazwę i tworzy playlistę
+        /// Obsługuje potwierdzenie tworzenia nowej playlisty
         /// </summary>
         private void OkPlaylistButton_Click(object sender, RoutedEventArgs e)
         {
@@ -412,17 +573,22 @@ namespace MusicPlayer
         /// <param name="name">Nazwa nowej playlisty</param>
         private void CreateNewPlaylist(string name)
         {
-            Playlist newPlaylist = playlistManager.CreateNewPlaylist(name, allPlaylists);
+            if (currentUser == null) return;
+
+            var newPlaylist = new Playlist(name);
+            currentUser.AddPlaylist(newPlaylist);
+            allPlaylists.Add(newPlaylist);
+
             PlaylistsList.SelectedItem = newPlaylist;
             currentPlaylist = newPlaylist;
             RefreshDisplayedSongs();
             CreatePlaylistDialog.Visibility = Visibility.Collapsed;
-            ClearForm();
+            ClearPlaylistForm();
             MessageBox.Show($"Pomyślnie utworzono playlistę {newPlaylist.Name}");
         }
 
         /// <summary>
-        /// Obsługuje kliknięcie przycisku usuwania playlisty - usuwa aktualnie wybraną playlistę
+        /// Obsługuje kliknięcie przycisku usuwania playlisty
         /// </summary>
         private void DeletePlaylistButton_Click(object sender, RoutedEventArgs e)
         {
@@ -430,21 +596,28 @@ namespace MusicPlayer
         }
 
         /// <summary>
-        /// Usuwa wskazaną playlistę z odpowiednimi sprawdzeniami i aktualizuje interfejs
+        /// Usuwa wskazaną playlistę
         /// </summary>
         /// <param name="playlist">Playlista do usunięcia</param>
         private void DeletePlaylist(Playlist playlist)
         {
+            if (currentUser == null || playlist == null) return;
+
             var (wasDeleted, wasCurrentPlaylist, message) = playlistManager.DeletePlaylistSafely(
                 playlist, currentPlaylist, allPlaylists);
+
             if (!wasDeleted)
             {
                 MessageBox.Show(message, "Błąd", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
+
+            // Usuń z użytkownika
+            currentUser.RemovePlaylist(playlist);
+
             if (wasCurrentPlaylist)
             {
-                var defaultPlaylist = FindPlaylistByName("Wszystkie utwory");
+                var defaultPlaylist = currentUser.FindPlaylistByName("Wszystkie utwory");
                 currentPlaylist = defaultPlaylist;
                 PlaylistsList.SelectedItem = defaultPlaylist;
                 RefreshDisplayedSongs();
@@ -452,6 +625,60 @@ namespace MusicPlayer
             MessageBox.Show(message, "Sukces", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
+        /// <summary>
+        /// Obsługuje kliknięcie przycisku tworzenia użytkownika
+        /// </summary>
+        private void CreateUserButton_Click(object sender, RoutedEventArgs e)
+        {
+            CreateUserDialog.Visibility = Visibility.Visible;
+            UserNameTextBox.Focus();
+        }
+
+        /// <summary>
+        /// Obsługuje anulowanie tworzenia użytkownika
+        /// </summary>
+        private void CancelUserButton_Click(object sender, RoutedEventArgs e)
+        {
+            CreateUserDialog.Visibility = Visibility.Collapsed;
+            ClearUserForm();
+        }
+
+        /// <summary>
+        /// Obsługuje potwierdzenie tworzenia użytkownika
+        /// </summary>
+        private void OkUserButton_Click(object sender, RoutedEventArgs e)
+        {
+            string userName = UserNameTextBox.Text?.Trim();
+            var (isValid, errorMessage) = userManager.ValidateUserName(userName, allUsers);
+
+            if (!isValid)
+            {
+                WriteErrorMsg(errorMessage, UserErrorMessageTextBlock);
+                return;
+            }
+
+            CreateNewUser(userName);
+        }
+
+        /// <summary>
+        /// Tworzy nowego użytkownika
+        /// </summary>
+        /// <param name="userName">Nazwa użytkownika</param>
+        private void CreateNewUser(string userName)
+        {
+            User newUser = userManager.CreateNewUser(userName, allUsers);
+
+            // Przełącz na nowego użytkownika
+            UsersList.SelectedItem = newUser;
+            SwitchToUser(newUser);
+
+            CreateUserDialog.Visibility = Visibility.Collapsed;
+            ClearUserForm();
+            MessageBox.Show($"Pomyślnie utworzono użytkownika: {newUser.Name}");
+        }
+
+
+       
         /// <summary>
         /// Wyświetla komunikat błędu w podanym elemencie TextBlock
         /// </summary>
@@ -464,9 +691,9 @@ namespace MusicPlayer
         }
 
         /// <summary>
-        /// Czyści formularz tworzenia playlisty - usuwa tekst i ukrywa komunikaty błędów
+        /// Czyści formularz tworzenia playlisty
         /// </summary>
-        private void ClearForm()
+        private void ClearPlaylistForm()
         {
             PlaylistNameTextBox.Text = "";
             ErrorMessageTextBlock.Visibility = Visibility.Collapsed;
@@ -474,9 +701,17 @@ namespace MusicPlayer
         }
 
         /// <summary>
-        /// Obsługuje podwójne kliknięcie na utworze w liście - odtwarza/pauzuje wybrany utwór
-        /// Implementuje logikę przełączania: podwójne kliknięcie na tę samą piosenkę = pause/play,
-        /// podwójne kliknięcie na inną piosenkę = zmiana utworu
+        /// Czyści formularz tworzenia użytkownika
+        /// </summary>
+        private void ClearUserForm()
+        {
+            UserNameTextBox.Text = "";
+            UserErrorMessageTextBlock.Visibility = Visibility.Collapsed;
+            UserErrorMessageTextBlock.Text = "";
+        }
+
+        /// <summary>
+        /// Obsługuje podwójne kliknięcie na utworze w liście
         /// </summary>
         private void SongsList_MouseDoubleClick(object sender, RoutedEventArgs e)
         {
@@ -503,8 +738,6 @@ namespace MusicPlayer
                 currentSong = selectedSong;
                 PlayPauseButton.Content = "⏸";
                 positionTimer.Start();
-
-
             }
 
             RefreshSongInfo(selectedSong);
@@ -512,7 +745,6 @@ namespace MusicPlayer
 
         /// <summary>
         /// Event handler wywoływany gdy MediaPlayer pomyślnie załaduje plik audio
-        /// Konfiguruje slider postępu z rzeczywistą długością utworu i resetuje pozycję na początek
         /// </summary>
         private void MediaPlayer_MediaOpened(object sender, EventArgs e)
         {
@@ -579,12 +811,11 @@ namespace MusicPlayer
                 PlayPauseButton.Content = "⏸";
                 positionTimer.Start();
                 RefreshSongInfo(selectedSong);
-
             }
         }
+
         /// <summary>
-        /// Timer wywoływany co 500ms podczas odtwarzania - aktualizuje slider postępu i czas bieżący
-        /// Działa tylko gdy muzyka gra i użytkownik nie manipuluje sliderem
+        /// Timer wywoływany co 500ms podczas odtwarzania
         /// </summary>
         private void PositionTimer_Tick(object sender, EventArgs e)
         {
@@ -594,9 +825,9 @@ namespace MusicPlayer
                 CurrentTime.Text = mediaPlayer.Position.ToString(@"mm\:ss");
             }
         }
+
         /// <summary>
-        /// Obsługuje zmiany wartości slidera postępu przez użytkownika (kliknięcie/przeciąganie)
-        /// Przewija MediaPlayer na nową pozycję i tymczasowo blokuje timer aby uniknąć konfliktów
+        /// Obsługuje zmiany wartości slidera postępu przez użytkownika
         /// </summary>
         private void ProgressSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
@@ -605,30 +836,31 @@ namespace MusicPlayer
                 mediaPlayer.Position = TimeSpan.FromSeconds(ProgressSlider.Value);
             }
         }
+
         /// <summary>
-        /// Obsługuje kliknięcie przycisku Play/Pause - przełącza między odtwarzaniem a pauzą aktualnego utworu
-        /// Aktualizuje ikonę przycisku i kontroluje timer postępu
+        /// Obsługuje kliknięcie przycisku Play/Pause
         /// </summary>
         private void PlayPauseButton_Click(object sender, RoutedEventArgs e)
         {
             if (currentSong == null)
             {
-                if (currentPlaylist.SongCount <= 0) return;
+                if (currentPlaylist?.SongCount <= 0) return;
                 currentSong = currentPlaylist?.Songs.FirstOrDefault();
-                currentSong.Play(mediaPlayer);
-                currentSong.IsActive = true;
-                PlayPauseButton.Content = "⏸";
-                positionTimer.Start();
-                RefreshSongInfo(currentSong);
-
+                currentSong?.Play(mediaPlayer);
+                if (currentSong != null)
+                {
+                    currentSong.IsActive = true;
+                    PlayPauseButton.Content = "⏸";
+                    positionTimer.Start();
+                    RefreshSongInfo(currentSong);
+                }
             }
-            else if(currentSong.IsActive)
+            else if (currentSong.IsActive)
             {
                 currentSong.Stop(mediaPlayer);
                 currentSong.IsActive = false;
                 PlayPauseButton.Content = "▶";
                 positionTimer.Stop();
-
             }
             else
             {
@@ -636,44 +868,41 @@ namespace MusicPlayer
                 currentSong.IsActive = true;
                 PlayPauseButton.Content = "⏸";
                 positionTimer.Start();
-
             }
         }
-        /// <summary>
-        /// Obsługuje kliknięcie przycisku następny utwór - przechodzi do kolejnego utworu w playliście
 
+        /// <summary>
+        /// Obsługuje kliknięcie przycisku następny utwór
         /// </summary>
         private void NextButton_Click(object sender, RoutedEventArgs e)
         {
-            if(currentSong == null || currentPlaylist == null ) return;
+            if (currentSong == null || currentPlaylist == null) return;
 
             int currIndex = currentPlaylist.Songs.ToList().IndexOf(currentSong);
-            if(currIndex != -1)
+            if (currIndex != -1)
             {
                 int nextIndex = (currIndex + 1) >= currentPlaylist.Songs.Count ? 0 : currIndex + 1;
                 Song selectedSong = currentPlaylist.Songs[nextIndex];
                 Console.WriteLine($"Obecna Indeks - {currIndex} Nastepna Piosenka - {nextIndex}");
-                
+
                 if (currentSong.IsActive)
-                 {
-                        currentSong.Stop(mediaPlayer);
-                        currentSong.IsActive = false;
-                        positionTimer.Stop();
-                 }
-                    selectedSong.Play(mediaPlayer);
-                    selectedSong.IsActive = true;
-                    currentSong = selectedSong;
-                    SongsList.SelectedItem = selectedSong;
+                {
+                    currentSong.Stop(mediaPlayer);
+                    currentSong.IsActive = false;
+                    positionTimer.Stop();
+                }
+                selectedSong.Play(mediaPlayer);
+                selectedSong.IsActive = true;
+                currentSong = selectedSong;
+                SongsList.SelectedItem = selectedSong;
                 PlayPauseButton.Content = "⏸";
-                    positionTimer.Start();
+                positionTimer.Start();
                 RefreshSongInfo(selectedSong);
-
             }
-
         }
+
         /// <summary>
-        /// Obsługuje kliknięcie przycisku poprzedni utwór - przechodzi do poprzedniego utworu w playliście
-        /// TODO: Implementacja funkcjonalności przechodzenia do poprzedniego utworu
+        /// Obsługuje kliknięcie przycisku poprzedni utwór
         /// </summary>
         private void PreviousButton_Click(object sender, RoutedEventArgs e)
         {
@@ -682,7 +911,7 @@ namespace MusicPlayer
             int currIndex = currentPlaylist.Songs.ToList().IndexOf(currentSong);
             if (currIndex != -1)
             {
-                int prevIndex = (currIndex - 1) < 0 ? currentPlaylist.Songs.Count-1 : currIndex - 1;
+                int prevIndex = (currIndex - 1) < 0 ? currentPlaylist.Songs.Count - 1 : currIndex - 1;
                 Song selectedSong = currentPlaylist.Songs[prevIndex];
                 Console.WriteLine($"Obecna Indeks - {currIndex} Nastepna Piosenka - {prevIndex}");
 
@@ -699,12 +928,11 @@ namespace MusicPlayer
                 PlayPauseButton.Content = "⏸";
                 positionTimer.Start();
                 RefreshSongInfo(selectedSong);
-
             }
         }
+
         /// <summary>
-        /// Obsługuje zmiany slidera głośności - aktualizuje głośność MediaPlayera w czasie rzeczywistym
-        /// Konwertuje wartość z zakresu 0-100 na 0.0-1.0 wymagany przez MediaPlayer
+        /// Obsługuje zmiany slidera głośności
         /// </summary>
         private void VolumeSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
@@ -713,16 +941,15 @@ namespace MusicPlayer
                 mediaPlayer.Volume = VolumeSlider.Value / 100.0;
             }
         }
+
         /// <summary>
-        /// Aktualizuje sekcję informacji o aktualnym utworze (tytuł, wykonawca)
-        /// Wyświetla dane o podanym utworze lub komunikat o braku aktualnego utworu
+        /// Aktualizuje sekcję informacji o aktualnym utworze
         /// </summary>
         /// <param name="song">Utwór do wyświetlenia lub null dla braku utworu</param>
         private void RefreshSongInfo(Song song)
         {
             if (song != null)
             {
-                
                 CurrentSongTitle.Text = song.Name;
                 CurrentArtist.Text = string.IsNullOrWhiteSpace(song.Author) ? "Autor nieznany" : song.Author;
                 CurrentAlbum.Text = string.IsNullOrWhiteSpace(song.Album) ? "" : song.Album;
@@ -734,6 +961,4 @@ namespace MusicPlayer
             }
         }
     }
-
-    
 }

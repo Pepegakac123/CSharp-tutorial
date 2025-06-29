@@ -47,10 +47,10 @@ namespace MusicPlayer
         {
             if (song == null) return false;
 
-            // Sprawdź czy utwór już istnieje w playliście
+            
             if (Songs.Any(s => s.Path == song.Path))
             {
-                return false; // Utwór już istnieje
+                return false; 
             }
 
             Songs.Add(song);
