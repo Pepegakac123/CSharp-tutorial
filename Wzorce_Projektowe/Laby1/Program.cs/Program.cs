@@ -3,20 +3,22 @@ using System.Collections.Generic;
 
 public class Vehicle
 {
-    public string brand;
-    public string model;
-    public int year;
+    public string Brand { get; init; }
+    public string Model { get; init; }
+    public int Year { get; init; }
+
+
 
     public Vehicle(string brand, string model, int year)
     {
-        this.brand = brand;
-        this.model = model;
-        this.year = year;
+        Brand = brand;
+        Model = model;
+        Year = year;
     }
 
     public void DisplayInfo()
     {
-        Console.WriteLine($"Brand: {brand}, Model: {model}, Year: {year}");
+        Console.WriteLine($"Brand: {Brand}, Model: {Model}, Year: {Year}");
     }
 
     public virtual void Start()
