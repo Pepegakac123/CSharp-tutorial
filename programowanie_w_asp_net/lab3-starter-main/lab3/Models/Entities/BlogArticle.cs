@@ -7,6 +7,6 @@ namespace lab3.Models.Entities
         public string Description { get; set; } = string.Empty;
         public string Content { get; set; } = string.Empty;
 
-        public IEnumerable<BlogComment> Comments { get; set; } = Enumerable.Empty<BlogComment>();
+        public ICollection<BlogComment> Comments { get; set; } = new List<BlogComment>();
     }
 }
