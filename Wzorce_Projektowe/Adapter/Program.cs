@@ -1,3 +1,4 @@
+/*
 Console.WriteLine("--- Test 1: Valid Payment ---");
 PaymentService paymentService = new PaymentService();
 paymentService.ProcessPayment(new SwiftPayment("PL12345678901234567890123456", 100));
@@ -95,7 +96,6 @@ public class MobilePayment
 }
 
 public class MobileToBankPaymentAdapter : IBankPayment
-
 {
     private readonly MobilePayment _mobilePayment;
     private static readonly Random _random = new Random();
@@ -105,15 +105,7 @@ public class MobileToBankPaymentAdapter : IBankPayment
     }
     public int Amount() => _mobilePayment.Amount;
     public string BankAccount()
-
     {
-
-        // Logika transformacji:
-        // 1. Wyciągamy same cyfry.
-        // 2. Dodajemy prefiks "88" (oznaczenie mobilne platnosci).
-        // 3. Dopełniamy losowymi cyframi do 26 znaków po "PL".
-        // 4. Dodajemy na początku "PL".
-
         string digitsOnly = new string(_mobilePayment.PhoneNumber.Where(char.IsDigit).ToArray());
         string accountDigits = "88" + digitsOnly;
         while (accountDigits.Length < 26)
@@ -123,17 +115,11 @@ public class MobileToBankPaymentAdapter : IBankPayment
         if (accountDigits.Length > 26) accountDigits = accountDigits.Substring(0, 26);
 
         return "PL" + accountDigits;
-
     }
-
-
 
     private char GetRandomDigit()
-
     {
-
         return (char)('0' + _random.Next(0, 10));
-
     }
-
 }
+*/
